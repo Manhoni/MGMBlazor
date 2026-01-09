@@ -7,6 +7,16 @@ using MGMBlazor.Services.Nfse;
 using MGMBlazor.Infrastructure.NFSe.Configuration;
 using System.Net;
 
+/*
+ * Sistema de Automação Fiscal MGM
+ * Copyright (c) 2025 [Seu Nome]
+ * 
+ * Este arquivo faz parte de um projeto licenciado sob CC BY-NC-SA 4.0
+ * Uso comercial requer permissão. Veja LICENSE para detalhes.
+ * 
+ * Contato: seuemail@exemplo.com
+ */
+
 //ServicePointManager.SecurityProtocol =
 //    SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
 

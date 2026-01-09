@@ -7,6 +7,19 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
+# Senhas, certificados, chaves privadas
+appsettings.Production.json
+appsettings.Development.json
+appsettings.json
+*.pfx
+*.p12
+*.pem
+*.key
+secrets.json
+.env
+.env.local
+.env.production
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -23,18 +36,45 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Certificados SSL/TLS
+*.cer
+*.crt
+*.der
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json
 artifacts/
 
+## NuGet ##
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+
+## Entity Framework ##
+*.mdf
+*.ldf
+*.ndf
+Migrations/
+
+## Visual Studio Code ##
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
-# NuGet Packages
-*.nupkg
-# NuGet Symbol Packages
-*.snupkg
+# Linux
+*~
+.directory
 
 # Others
 ~$*
@@ -52,3 +92,14 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Específico do Projeto ##
+# Certificados da empresa
+certificates/
+Infrastructure/NFSe/Abrasf/Certificates
+nfse_teste.xml
+empresa_cert.pfx
+
+# Configurações locais do servidor
+server_config.json
+local_settings.json
