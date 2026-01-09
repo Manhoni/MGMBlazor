@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EnviarLoteRpsSincronoEnvio xmlns="http://www.abrasf.org.br/nfse.xsd"
+                            xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                            xsi:schemaLocation="http://www.abrasf.org.br/nfse.xsd nfse_v2.01.xsd ">
+	<LoteRps Id=""
+	         versao="2.01">
+		<NumeroLote>7744</NumeroLote>
+		<CpfCnpj>
+			<Cnpj>99999999999999</Cnpj>
+		</CpfCnpj>
+		<InscricaoMunicipal>999999</InscricaoMunicipal>
+		<QuantidadeRps>1</QuantidadeRps>
+		<ListaRps>
+			<Rps>
+				<InfDeclaracaoPrestacaoServico>
+					<Rps Id="rps">
+						<IdentificacaoRps>
+							<Numero>10367</Numero>
+							<Serie>1</Serie>
+							<Tipo>1</Tipo>
+						</IdentificacaoRps>
+						<DataEmissao>2012-06-05</DataEmissao>
+						<Status>1</Status>
+					</Rps>
+					<Competencia>2012-06-05</Competencia>
+					<Servico>
+						<Valores>
+							<ValorServicos>1830.48</ValorServicos>
+							<ValorDeducoes>0.0</ValorDeducoes>
+							<ValorPis>0.0</ValorPis>
+							<ValorCofins>0.0</ValorCofins>
+							<ValorInss>0.0</ValorInss>
+							<ValorIr>0.0</ValorIr>
+							<ValorCsll>0.0</ValorCsll>
+							<OutrasRetencoes>0.0</OutrasRetencoes>
+							<ValorIss>54.91</ValorIss>
+							<Aliquota>3</Aliquota>
+							<DescontoIncondicionado>0.0</DescontoIncondicionado>
+							<DescontoCondicionado>0.0</DescontoCondicionado>
+						</Valores>
+						<IssRetido>2</IssRetido>
+						<ResponsavelRetencao>1</ResponsavelRetencao>
+						<ItemListaServico>0101</ItemListaServico>
+						<CodigoCnae>783770</CodigoCnae>
+						<CodigoTributacaoMunicipio>0</CodigoTributacaoMunicipio>
+						<CodigoNbs>115013000</CodigoNbs>
+						<Discriminacao>Discriminacao Servico Teste 10367
+	Discriminacao Servico Teste 10367
+	Discriminacao Servico Teste 10367
+	Discriminacao Servico Teste 10367</Discriminacao>
+						<CodigoMunicipio>4115200</CodigoMunicipio>
+						<CodigoPais>1058</CodigoPais>
+						<ExigibilidadeISS>1</ExigibilidadeISS>
+						<MunicipioIncidencia>4115200</MunicipioIncidencia>
+						<NumeroProcesso>38300/2012</NumeroProcesso>
+					</Servico>
+					<Prestador>
+						<CpfCnpj>
+							<Cnpj>99999999999999</Cnpj>
+						</CpfCnpj>
+						<InscricaoMunicipal>999999</InscricaoMunicipal>
+					</Prestador>
+					<Tomador>
+						<IdentificacaoTomador>
+							<CpfCnpj>
+								<Cnpj>56407020000136</Cnpj>
+							</CpfCnpj>
+							<InscricaoMunicipal>0</InscricaoMunicipal>
+						</IdentificacaoTomador>
+						<RazaoSocial>TOMADOR TESTE 110367</RazaoSocial>
+						<Endereco>
+							<Endereco>XV DE NOVEMBRO</Endereco>
+							<Numero>701</Numero>
+							<Complemento>PRIMEIRO ANDAR</Complemento>
+							<Bairro>CENTRO</Bairro>
+							<CodigoMunicipio>4115200</CodigoMunicipio>
+							<Uf>PR</Uf>
+							<CodigoPais>1058</CodigoPais>
+							<Cep>87013230</Cep>
+						</Endereco>
+						<Contato>
+							<Telefone>449999999</Telefone>
+							<Email>mapaliari@gmail.com</Email>
+						</Contato>
+					</Tomador>
+					<Intermediario>
+						<IdentificacaoIntermediario>
+							<CpfCnpj>
+								<Cnpj>63402328000154</Cnpj>
+							</CpfCnpj>
+							<InscricaoMunicipal>0</InscricaoMunicipal>
+						</IdentificacaoIntermediario>
+						<RazaoSocial>INTERMEDIARIO TESTE 10367</RazaoSocial>
+					</Intermediario>
+					<ConstrucaoCivil>
+						<CodigoObra>999999</CodigoObra>
+						<Art>ART9999</Art>
+					</ConstrucaoCivil>
+					<RegimeEspecialTributacao>1</RegimeEspecialTributacao>
+					<OptanteSimplesNacional>2</OptanteSimplesNacional>
+					<IncentivoFiscal>2</IncentivoFiscal>
+					<IBSCBS>
+						<finNFSe>0</finNFSe>
+						<indFinal>0</indFinal>
+						<cIndOp>100301</cIndOp>
+						<indDest>0</indDest>
+						<valores>
+							<trib>
+								<gIBSCBS>
+									<CST>000</CST>
+									<cClassTrib>000001</cClassTrib>
+								</gIBSCBS>
+							</trib>
+						</valores>
+					</IBSCBS>
+				</InfDeclaracaoPrestacaoServico>
+			</Rps>
+		</ListaRps>
+	</LoteRps>
+	<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+		<SignedInfo>
+			<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+			<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+			<Reference URI="#L1">
+				<Transforms>
+					<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+					<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+				</Transforms>
+				<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+				<DigestValue>KuSc15SCJCOWZcT3Y+M5eW+5OJU=</DigestValue>
+			</Reference>
+		</SignedInfo>
+		<SignatureValue>e/NF03ioE1gvyF5jurM8NOTn1W4hpg7oyzhdM4m8GWhHpc91aNJihcF9ax29rpOR/4DEEaMTwIl/jOiE8eqGkHkK5uTx931GD1Vulq3yGubs/GnToXRD8EW0eV1gId1ODFT3DOjkPQXyDHewFWowhpPsC8lLDJO0BFpbf+KkQBqi8cOnv5dvFq6WrLNKRkjNpB2bu2VPpNUwlmaM6Jtp6bvcbCd3pmLpur/eujrdYy16JeZ19zAkvipnBRpDjEFsuSKddraUbLw3FFTNngV4tw0mBAhGWNKZPgLDEm26OgrBHHdGDsb2S+SFEPFIKbwQQ7J+2JWUT8OBvfMQVfNyEQ==</SignatureValue>
+		<KeyInfo>
+			<X509Data>
+				<X509Certificate>MIIESzCCAzOgAwIBAgIBATALBgkqhkiG9w0BAQswgawxLjAsBgNVBAMMJU1hcmNvcyBBbnRvbmlvIFBhbGlhcmk6MDk0Mjc4ODkwMDAxNjIxEzARBgNVBAoMClBhbGlhcmkgVEkxEzARBgNVBAsMClBhbGlhcmkgVEkxCzAJBgNVBAgMAlBSMQswCQYDVQQGEwJCUjEQMA4GA1UEBwwHTWFyaW5nYTEkMCIGCSqGSIb3DQEJARYVbWFyY29zQHBhbGlhcmkuY29tLmJyMB4XDTEyMDUxOTAxMDUyMFoXDTEzMDUxOTAxMDUyMFowgawxLjAsBgNVBAMMJU1hcmNvcyBBbnRvbmlvIFBhbGlhcmk6MDk0Mjc4ODkwMDAxNjIxEzARBgNVBAoMClBhbGlhcmkgVEkxEzARBgNVBAsMClBhbGlhcmkgVEkxCzAJBgNVBAgMAlBSMQswCQYDVQQGEwJCUjEQMA4GA1UEBwwHTWFyaW5nYTEkMCIGCSqGSIb3DQEJARYVbWFyY29zQHBhbGlhcmkuY29tLmJyMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuBgErKnsyXej1FeRN4YDFevugCz29sg3R68mRUrdhZAmsMaOtDFbJSU72A9KfaIRnQM4rOvHO8Y8QXQFj3H5W4JkaN9ixp9v7YIQ7s35yzmCgFCgpW2DdeZF/+X3tmsRBO5D7yMkLAj3rrp1RIIRHJBwQjtW858oPLg//jr4MSurzluhTtFcJ3jeTNTE9J3pDe5j6J7NmhDNp87qZhDpHCqmIbyXezHGw8aH5gAUqRUT/uQxI3XuwXc6P9jMWKMVRBevtPo9EiWxJbONku85M1JF0qrz31WgQa7/ueEu2D5oRphhesBgWauQlBQ039PCwnVLStWwXdgoO8EPo0gqgwIDAQABo3gwdjAOBgNVHQ8BAf8EBAMCB4AwJgYDVR0lAQH/BBwwGgYIKwYBBQUHAwIGCCsGAQUFBwMBBgRVHSUAMDwGA1UdEQQ1MDOBFW1hcmNvc0BwYWxpYXJpLmNvbS5icoIHUGFsaWFyaYIRVEk6MDk0Mjc4ODkwMDAxNjIwDQYJKoZIhvcNAQELBQADggEBAK70HMckwgnoaG4EvcTcWyjHhfDIi7y/Nf/VQewBrw5wrikVu2Dp6z1Fmw32Uzt3ZsG0KHdKcIxVbqGEPJa3NX5zd2s9FpwSROEz6c7MKlJTFje9EIaoFl3BaZc/7GEsWYTpuR1XWbUOqyKenkVnuZzZbysHCgArp6JDkB8u3YQ8CFeHrVKsLv/gdLYSdnXaj4SW4ojEKE+bkQPJu27typo7gYNdZr9dF17y1jAsqiUE/65sG53MZtaxjryhyGUZ9g8p486ByNsggmHa+FJL0wJUcu71VWhDLDzorhsPfMyqH3S+kO9i3aCkWcRkNWNWr5wrqBp7VG+OH6K4=</X509Certificate>
+			</X509Data>
+		</KeyInfo>
+	</Signature>
+</EnviarLoteRpsSincronoEnvio>

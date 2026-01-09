@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MGMBlazor.web", "MGMBlazor.web.csproj", "{91128A5D-0EBD-DAB4-93E5-A9AB3A5D8FEF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{91128A5D-0EBD-DAB4-93E5-A9AB3A5D8FEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91128A5D-0EBD-DAB4-93E5-A9AB3A5D8FEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91128A5D-0EBD-DAB4-93E5-A9AB3A5D8FEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91128A5D-0EBD-DAB4-93E5-A9AB3A5D8FEF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A0DD174B-3EDD-4838-84F6-E83D2763E944}
+	EndGlobalSection
+EndGlobal
