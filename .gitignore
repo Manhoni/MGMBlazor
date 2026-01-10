@@ -100,6 +100,37 @@ Infrastructure/NFSe/Abrasf/Certificates
 nfse_teste.xml
 empresa_cert.pfx
 
+# ===================================
+# CERTIFICADOS - NUNCA VERSIONAR!
+# ===================================
+
+# Pasta inteira de certificados (qualquer lugar no projeto)
+**/certificates/
+**/Certificates/
+
+# Caminho específico
+Infrastructure/NFSe/Abrasf/Certificates/
+
+# Extensões de certificados (em qualquer lugar)
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+*.der
+
+# Arquivos específicos
+nfse_teste.xml
+empresa_cert.pfx
+
+# Outros arquivos sensíveis
+appsettings.Development.json
+appsettings.Production.json
+secrets.json
+.env
+.env.local
+
 # Configurações locais do servidor
 server_config.json
 local_settings.json
