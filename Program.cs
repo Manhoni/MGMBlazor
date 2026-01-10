@@ -6,6 +6,8 @@ using MGMBlazor.Infrastructure.NFSe.Soap;
 using MGMBlazor.Services.Nfse;
 using MGMBlazor.Infrastructure.NFSe.Configuration;
 using System.Net;
+using MGMBlazor.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 /*
  * Sistema de Automação Fiscal MGM
@@ -25,6 +27,13 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------- CONFIG ----------
 builder.Services.Configure<NfseOptions>(
     builder.Configuration.GetSection("Nfse"));
+
+// 1. Pega a string de conexão do appsettings.json
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// 2. Registra o DbContext (É aqui que a ferramenta olha)
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 // ---------- NFSe ----------
 builder.Services.AddScoped<AbrasfXmlBuilder>();

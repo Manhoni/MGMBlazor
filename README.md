@@ -201,7 +201,7 @@ Este projeto está sob a licença CC BY-NC-SA 4.0.
 - Incorporar em produtos/serviços comerciais
 
 📧 **Uso Comercial:** Para licenciamento comercial, 
-   entre em contato: seuemail@exemplo.com
+   entre em contato: joaogmanhoni@hotmail.com
 
 Veja o arquivo [LICENSE](LICENSE) para detalhes completos.
 
