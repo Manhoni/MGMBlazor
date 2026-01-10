@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 /*
  * Sistema de Automação Fiscal MGM
- * Copyright (c) 2025 [Seu Nome]
+ * Copyright (c) 2026 João Gabriel Manhoni
  * 
  * Este arquivo faz parte de um projeto licenciado sob CC BY-NC-SA 4.0
  * Uso comercial requer permissão. Veja LICENSE para detalhes.

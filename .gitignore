@@ -60,7 +60,6 @@ project.fragment.lock.json
 *.mdf
 *.ldf
 *.ndf
-Migrations/
 
 ## Visual Studio Code ##
 .vscode/
