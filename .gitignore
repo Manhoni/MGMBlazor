@@ -127,6 +127,7 @@ empresa_cert.pfx
 # Outros arquivos sensíveis
 appsettings.Development.json
 appsettings.Production.json
+appsettings.json
 secrets.json
 .env
 .env.local
