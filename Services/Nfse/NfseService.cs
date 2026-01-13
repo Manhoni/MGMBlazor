@@ -55,6 +55,9 @@ public class NfseService : INfseService
             string xmlAssinado = _signer.AssinarLoteRps(xmlDoc, certificado);
             resposta.XmlEnviado = xmlAssinado;
 
+            // GRAVA O ARQUIVO PARA COPIAR PARA O POSTMAN
+            File.WriteAllText("nota_assinada.xml", xmlAssinado);
+
             // 5. Envio SOAP (Aqui está a função que estava "faltando")
             // Certifique-se que o nome na classe FintelSoapClient seja igual a este
             string xmlRetorno = await _soapClient.EnviarGerarNfseAsync(xmlAssinado, certificado);
@@ -63,7 +66,7 @@ public class NfseService : INfseService
             // 6. Próximo passo será criar o Parser para ler o xmlRetorno
             _retornoParser.Processar(xmlRetorno, resposta);
 
-            resposta.Sucesso = true; 
+            //resposta.Sucesso = true; 
         }
         catch (Exception ex)
         {

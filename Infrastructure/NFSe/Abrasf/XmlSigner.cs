@@ -7,48 +7,30 @@ public class XmlSigner
 {
     public string AssinarLoteRps(XDocument xml, X509Certificate2 certificado)
     {
-        Console.WriteLine("Iniciando assinatura do LoteRps");
-
-        var xmlDoc = new XmlDocument
-        {
-            PreserveWhitespace = true
-        };
-
-        using (var reader = xml.CreateReader())
-        {
-            xmlDoc.Load(reader);
-        }
+        var xmlDoc = new XmlDocument { PreserveWhitespace = true };
+        using (var reader = xml.CreateReader()) { xmlDoc.Load(reader); }
 
         var nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
-        nsManager.AddNamespace("nfse", "http://www.abrasf.org.br/nfse");
+        // ADICIONADO O .xsd AQUI TAMBÉM
+        nsManager.AddNamespace("ns", "http://www.abrasf.org.br/nfse.xsd");
 
-        var loteRpsNode = xmlDoc.SelectSingleNode("//nfse:LoteRps", nsManager)
-            ?? throw new Exception("Nó LoteRps não encontrado.");
+        // BUSCA A TAG CORRETA DO 2.01
+        var nodeToSign = xmlDoc.SelectSingleNode("//ns:InfDeclaracaoPrestacaoServico", nsManager)
+            ?? throw new Exception("Nó InfDeclaracaoPrestacaoServico não encontrado.");
 
-        var signedXml = new SignedXml(xmlDoc)
-        {
-            SigningKey = certificado.GetRSAPrivateKey()
-        };
-
-        var reference = new Reference
-        {
-            Uri = ""
-        };
-
+        var signedXml = new SignedXml(xmlDoc) { SigningKey = certificado.GetRSAPrivateKey() };
+        var reference = new Reference { Uri = "" };
         reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
         reference.AddTransform(new XmlDsigC14NTransform());
-
         signedXml.AddReference(reference);
 
-        signedXml.KeyInfo = new KeyInfo();
-        signedXml.KeyInfo.AddClause(new KeyInfoX509Data(certificado));
+        var keyInfo = new KeyInfo();
+        keyInfo.AddClause(new KeyInfoX509Data(certificado));
+        signedXml.KeyInfo = keyInfo;
 
         signedXml.ComputeSignature();
-
-        var xmlSignature = signedXml.GetXml();
-        loteRpsNode.AppendChild(xmlDoc.ImportNode(xmlSignature, true));
+        nodeToSign.AppendChild(xmlDoc.ImportNode(signedXml.GetXml(), true));
 
         return xmlDoc.OuterXml;
-        //return XDocument.Parse(xmlDoc.OuterXml); // ou retornar uma string para não dar problema pra converter para string depois
     }
 }

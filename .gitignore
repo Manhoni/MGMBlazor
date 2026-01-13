@@ -97,6 +97,7 @@ nunit-*.xml
 certificates/
 Infrastructure/NFSe/Abrasf/Certificates
 nfse_teste.xml
+nota_assinada.xml
 empresa_cert.pfx
 
 # ===================================
