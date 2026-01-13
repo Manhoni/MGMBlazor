@@ -58,6 +58,15 @@ public class NfseService : INfseService
             // GRAVA O ARQUIVO PARA COPIAR PARA O POSTMAN
             File.WriteAllText("nota_assinada.xml", xmlAssinado);
 
+            // 2. Limpa a declaração XML interna que Maringá não gosta
+            string xmlSemDeclaracao = xmlAssinado.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", "");
+
+            // 2. Escapa o XML programaticamente (transforma < em &lt;)
+            string xmlParaPostman = System.Security.SecurityElement.Escape(xmlSemDeclaracao);
+
+            // 3. Salva em um arquivo TXT para você só dar CTRL+C e CTRL+V no Postman
+            File.WriteAllText("CONTEUDO_PARA_POSTMAN.txt", xmlParaPostman);
+
             // 5. Envio SOAP (Aqui está a função que estava "faltando")
             // Certifique-se que o nome na classe FintelSoapClient seja igual a este
             string xmlRetorno = await _soapClient.EnviarGerarNfseAsync(xmlAssinado, certificado);

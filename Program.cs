@@ -53,6 +53,7 @@ using (var scope = app.Services.CreateScope())
 
     var notaTeste = new NotaFiscal
     {
+        Id = 4,
         Tomador = new Cliente
         {
             RazaoSocial = "Cliente Teste LTDA",

@@ -11,15 +11,22 @@ public class XmlSigner
         using (var reader = xml.CreateReader()) { xmlDoc.Load(reader); }
 
         var nsManager = new XmlNamespaceManager(xmlDoc.NameTable);
-        // ADICIONADO O .xsd AQUI TAMBÉM
         nsManager.AddNamespace("ns", "http://www.abrasf.org.br/nfse.xsd");
 
-        // BUSCA A TAG CORRETA DO 2.01
+        // 1. O QUE ASSINAR: A tag InfDeclaracaoPrestacaoServico
         var nodeToSign = xmlDoc.SelectSingleNode("//ns:InfDeclaracaoPrestacaoServico", nsManager)
             ?? throw new Exception("Nó InfDeclaracaoPrestacaoServico não encontrado.");
 
+        // 2. ONDE PENDURAR A ASSINATURA: Na tag <Rps> (que é a mãe da Inf...)
+        var parentNode = nodeToSign.ParentNode 
+            ?? throw new Exception("Nó pai (Rps) não encontrado.");
+
         var signedXml = new SignedXml(xmlDoc) { SigningKey = certificado.GetRSAPrivateKey() };
-        var reference = new Reference { Uri = "" };
+        
+        // Referência deve apontar para o ID que criamos no Builder (ex: #R1)
+        string id = nodeToSign.Attributes?["Id"]?.Value ?? "1";
+        var reference = new Reference { Uri = "#" + id };
+        
         reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
         reference.AddTransform(new XmlDsigC14NTransform());
         signedXml.AddReference(reference);
@@ -29,7 +36,9 @@ public class XmlSigner
         signedXml.KeyInfo = keyInfo;
 
         signedXml.ComputeSignature();
-        nodeToSign.AppendChild(xmlDoc.ImportNode(signedXml.GetXml(), true));
+
+        // 3. ADICIONA A ASSINATURA NO LUGAR CERTO: Dentro de <Rps>, após a <Inf...>
+        parentNode.AppendChild(xmlDoc.ImportNode(signedXml.GetXml(), true));
 
         return xmlDoc.OuterXml;
     }

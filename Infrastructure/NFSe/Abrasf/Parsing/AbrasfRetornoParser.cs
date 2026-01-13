@@ -19,46 +19,62 @@ public class AbrasfRetornoParser : INfseRetornoParser
         try
         {
             var soapDoc = XDocument.Parse(xmlSoap);
-            XNamespace fintelNs = _options.Namespace; // Puxa do appsettings.json
-            XNamespace abrasfNs = "http://www.abrasf.org.br/nfse.xsd";
 
-            // 1. Extrai o conteúdo da tag de resultado
-            var resultadoRaw = soapDoc.Descendants(fintelNs + "GerarNfseResult").FirstOrDefault()?.Value;
+            // 1. Extrai o conteúdo da tag <return>
+            var resultadoRaw = soapDoc.Descendants().FirstOrDefault(x => 
+                x.Name.LocalName == "GerarNfseResult" || 
+                x.Name.LocalName == "return")?.Value;
 
             if (string.IsNullOrEmpty(resultadoRaw))
             {
                 resposta.Sucesso = false;
-                resposta.Erros.Add("Resposta da prefeitura veio vazia.");
+                resposta.Erros.Add("O servidor não retornou dados no campo de resultado.");
                 return;
             }
 
-            var xmlInterno = XDocument.Parse(resultadoRaw);
+            // --- DEBUG: Remova esta linha depois que funcionar ---
+            // Console.WriteLine("DEBUG XML INTERNO: " + resultadoRaw);
 
-            // 2. Verifica se há erros
-            var mensagens = xmlInterno.Descendants(abrasfNs + "MensagemRetorno");
+            var xmlInterno = XDocument.Parse(resultadoRaw);
+            
+            // Definimos o Namespace que vimos no seu Postman
+            XNamespace nsAbrasf = "http://www.abrasf.org.br/nfse.xsd";
+
+            // 2. BUSCA ERROS (Usando o Namespace e o LocalName juntos para não falhar)
+            var mensagens = xmlInterno.Descendants().Where(x => x.Name.LocalName == "MensagemRetorno").ToList();
+
             if (mensagens.Any())
             {
                 resposta.Sucesso = false;
                 foreach (var m in mensagens)
                 {
-                    resposta.Erros.Add($"{m.Element(abrasfNs + "Codigo")?.Value} - {m.Element(abrasfNs + "Mensagem")?.Value}");
+                    var codigo = m.Descendants().FirstOrDefault(x => x.Name.LocalName == "Codigo")?.Value;
+                    var msg = m.Descendants().FirstOrDefault(x => x.Name.LocalName == "Mensagem")?.Value;
+                    resposta.Erros.Add($"{codigo} - {msg}");
                 }
                 return;
             }
 
-            // 3. Se deu certo, pega os dados
-            var nfse = xmlInterno.Descendants(abrasfNs + "ComplNfse").FirstOrDefault();
-            if (nfse != null)
+            // 3. BUSCA SUCESSO (ComplNfse)
+            // No sucesso, a estrutura é: ListaNfse -> CompNfse -> Nfse -> InfNfse
+            var infNfse = xmlInterno.Descendants().FirstOrDefault(x => x.Name.LocalName == "InfNfse");
+            
+            if (infNfse != null)
             {
                 resposta.Sucesso = true;
-                resposta.NumeroNota = nfse.Descendants(abrasfNs + "Numero").FirstOrDefault()?.Value;
-                resposta.CodigoVerificacao = nfse.Descendants(abrasfNs + "CodigoVerificacao").FirstOrDefault()?.Value;
+                resposta.NumeroNota = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "Numero")?.Value;
+                resposta.CodigoVerificacao = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "CodigoVerificacao")?.Value;
+            }
+            else
+            {
+                resposta.Sucesso = false;
+                resposta.Erros.Add("Nota não encontrada e nenhum erro foi reportado.");
             }
         }
         catch (Exception ex)
         {
             resposta.Sucesso = false;
-            resposta.Erros.Add($"Erro no processamento: {ex.Message}");
+            resposta.Erros.Add($"Erro crítico no Parser: {ex.Message}");
         }
     }
 }
