@@ -1,11 +1,22 @@
 using System.Globalization;
 using System.Xml.Linq;
 using MGMBlazor.Domain.Entities;
+using MGMBlazor.Infrastructure.NFSe.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace MGMBlazor.Infrastructure.NFSe.Abrasf;
 
+
+
 public class AbrasfXmlBuilder
 {
+    private readonly NfseOptions _options;
+
+    public AbrasfXmlBuilder(IOptions<NfseOptions> options)
+    {
+        _options = options.Value;
+    }
+
     // ACRESCENTADO O .xsd NO FINAL
     private static readonly XNamespace Ns = "http://www.abrasf.org.br/nfse.xsd";
 
@@ -41,9 +52,9 @@ public class AbrasfXmlBuilder
 
             new XElement(Ns + "Prestador",
                 new XElement(Ns + "CpfCnpj",
-                    new XElement(Ns + "Cnpj", "02152507000196") // CNPJ da MGM
+                    new XElement(Ns + "Cnpj", _options.Prestador.Cnpj) 
                 ),
-                new XElement(Ns + "InscricaoMunicipal", "85532") // CONFIRMAR IM DA MGM
+                new XElement(Ns + "InscricaoMunicipal", _options.Prestador.InscricaoMunicipal)
             ),
 
             new XElement(Ns + "Tomador",
