@@ -51,9 +51,12 @@ using (var scope = app.Services.CreateScope())
 {
     var nfseService = scope.ServiceProvider.GetRequiredService<INfseService>();
 
+    var proximoRPS = await nfseService.ObterProximoNumeroRpsAsync();
+    Console.WriteLine($"Gerando nota com RPS: {proximoRPS}");
+
     var notaTeste = new NotaFiscal
     {
-        Id = 4,
+        Id = proximoRPS,
         Tomador = new Cliente
         {
             RazaoSocial = "Cliente Teste LTDA",

@@ -4,11 +4,14 @@ using System.Xml.Linq;
 using MGMBlazor.Infrastructure.NFSe.Certificates;
 using MGMBlazor.Infrastructure.NFSe.Soap;
 using MGMBlazor.Infrastructure.NFSe.Abrasf.Parsing;
+using MGMBlazor.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace MGMBlazor.Services.Nfse;
 
 public class NfseService : INfseService
 {
+    private readonly AppDbContext _context;
     private readonly AbrasfXmlBuilder _builder;
     private readonly XmlValidator _validator;
     private readonly XmlSigner _signer;
@@ -18,6 +21,7 @@ public class NfseService : INfseService
     private readonly INfseRetornoParser _retornoParser;
 
     public NfseService(
+        AppDbContext context,
         AbrasfXmlBuilder builder,
         XmlValidator validator,
         XmlSigner signer,
@@ -25,6 +29,7 @@ public class NfseService : INfseService
         FintelSoapClient soapClient,
         INfseRetornoParser retornoParser)
     {
+        _context = context;
         _builder = builder;
         _validator = validator;
         _signer = signer;
@@ -34,6 +39,15 @@ public class NfseService : INfseService
 
         // Define a pasta uma única vez no construtor
         _pastaSchemas = Path.Combine(AppContext.BaseDirectory, "Infrastructure", "NFSe", "Abrasf", "Schemas");
+    }
+
+    public async Task<int> ObterProximoNumeroRpsAsync()
+    {
+        // Busca o maior VendaId já salvo no banco. Se não houver nenhum, começa do 1 (ou do número que você definir)
+        var ultimoRPS = await _context.NotasFiscaisEmitidas
+            .MaxAsync(n => (int?)n.VendaId) ?? 4; // Se quiser começar de um número específico, mude o 0 para 100, por exemplo.
+
+        return ultimoRPS + 1;
     }
 
     public async Task<RespostaEmissao> EmitirNotaAsync(NotaFiscal nota)
@@ -58,24 +72,23 @@ public class NfseService : INfseService
             // GRAVA O ARQUIVO PARA COPIAR PARA O POSTMAN
             File.WriteAllText("nota_assinada.xml", xmlAssinado);
 
-            // 2. Limpa a declaração XML interna que Maringá não gosta
+            // Limpa a declaração XML interna que Maringá não gosta
             string xmlSemDeclaracao = xmlAssinado.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", "");
 
-            // 2. Escapa o XML programaticamente (transforma < em &lt;)
+            // Escapa o XML programaticamente (transforma < em &lt;)
             string xmlParaPostman = System.Security.SecurityElement.Escape(xmlSemDeclaracao);
 
-            // 3. Salva em um arquivo TXT para você só dar CTRL+C e CTRL+V no Postman
             File.WriteAllText("CONTEUDO_PARA_POSTMAN.txt", xmlParaPostman);
 
-            // 5. Envio SOAP (Aqui está a função que estava "faltando")
-            // Certifique-se que o nome na classe FintelSoapClient seja igual a este
             string xmlRetorno = await _soapClient.EnviarGerarNfseAsync(xmlAssinado, certificado);
             resposta.XmlRetorno = xmlRetorno;
 
-            // 6. Próximo passo será criar o Parser para ler o xmlRetorno
             _retornoParser.Processar(xmlRetorno, resposta);
 
-            //resposta.Sucesso = true; 
+            if (resposta.Sucesso)
+            {
+                await SalvarNoBanco(nota, resposta);
+            }
         }
         catch (Exception ex)
         {
@@ -85,4 +98,21 @@ public class NfseService : INfseService
 
         return resposta;
     }
+
+    private async Task SalvarNoBanco(NotaFiscal nota, RespostaEmissao resposta)
+{
+    var notaEmitida = new NotaFiscalEmitida
+    {
+        VendaId = nota.Id, // Grava o número do RPS que acabamos de usar
+        DataEmissao = DateTime.UtcNow,
+        NumeroNota = resposta.NumeroNota,
+        CodigoVerificacao = resposta.CodigoVerificacao,
+        XmlRetorno = resposta.XmlRetorno,
+        Status = StatusNfse.Faturada
+    };
+
+    _context.NotasFiscaisEmitidas.Add(notaEmitida);
+    await _context.SaveChangesAsync();
+    Console.WriteLine($"[BANCO] Nota {resposta.NumeroNota} salva com sucesso!");
+}
 }
