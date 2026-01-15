@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<NotaFiscalEmitida> NotasFiscaisEmitidas { get; set; }
     // Se você quiser salvar os detalhes dos serviços e da nota bruta, adicione-os aqui:
     public DbSet<Servico> Servicos { get; set; }
+    public DbSet<Cobranca> Cobrancas { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

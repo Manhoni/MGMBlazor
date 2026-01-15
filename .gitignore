@@ -101,6 +101,10 @@ nota_assinada.xml
 CONTEUDO_PARA_POSTMAN.txt
 empresa_cert.pfx
 
+# Bancario
+BoletoRequest.json
+BoletoResponse.json
+
 # ===================================
 # CERTIFICADOS - NUNCA VERSIONAR!
 # ===================================
@@ -112,7 +116,7 @@ empresa_cert.pfx
 # Caminho específico
 Infrastructure/NFSe/Abrasf/Certificates/
 
-# Extensões de certificados (em qualquer lugar)
+# Extensões de certificados
 *.pfx
 *.p12
 *.pem
