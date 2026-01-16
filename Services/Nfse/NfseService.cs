@@ -16,6 +16,7 @@ public class NfseService : INfseService
     private readonly XmlValidator _validator;
     private readonly XmlSigner _signer;
     private readonly ICertificateProvider _certificateProvider;
+    private readonly HttpClient _httpCliente;
     private readonly FintelSoapClient _soapClient; // Injetado ou criado aqui
     private readonly string _pastaSchemas;
     private readonly INfseRetornoParser _retornoParser;
@@ -26,6 +27,7 @@ public class NfseService : INfseService
         XmlValidator validator,
         XmlSigner signer,
         ICertificateProvider certificateProvider,
+        HttpClient httpClient,
         FintelSoapClient soapClient,
         INfseRetornoParser retornoParser)
     {
@@ -34,6 +36,7 @@ public class NfseService : INfseService
         _validator = validator;
         _signer = signer;
         _certificateProvider = certificateProvider;
+        _httpCliente = httpClient;
         _soapClient = soapClient;
         _retornoParser = retornoParser;
 
