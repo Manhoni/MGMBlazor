@@ -5,6 +5,7 @@ public enum StatusNfse { Pendente, Faturada, Erro, Cancelada }
 public class NotaFiscalEmitida
 {
     public int Id { get; set; }
+    public int RpsNumero { get; set; }
     public int VendaId { get; set; } // Link com sua tabela de vendas
     public DateTime DataEmissao { get; set; }
     

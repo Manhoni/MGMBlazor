@@ -23,14 +23,13 @@ public class Resultado
     public string? CodigoEspecieDocumento { get; set; }
 
     [JsonPropertyName("dataEmissao")]
-    public DateTimeOffset DataEmissao { get; set; }
+    public string? DataEmissao { get; set; }
 
     [JsonPropertyName("nossoNumero")]
     public long NossoNumero { get; set; }
 
     [JsonPropertyName("seuNumero")]
-    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-    public long SeuNumero { get; set; }
+    public string? SeuNumero { get; set; }
 
     [JsonPropertyName("codigoBarras")]
     public string? CodigoBarras { get; set; }
@@ -42,10 +41,13 @@ public class Resultado
     public decimal Valor { get; set; }
 
     [JsonPropertyName("dataVencimento")]
-    public DateTimeOffset DataVencimento { get; set; }
+    public string? DataVencimento { get; set; }
 
     [JsonPropertyName("pagador")]
     public PagadorResponse? Pagador { get; set; }
+
+    [JsonPropertyName("mensagensInstrucao")]
+    public List<string>? MensagensInstrucao { get; set; }
 
     [JsonPropertyName("pdfBoleto")]
     public string? PdfBoleto { get; set; }
@@ -55,6 +57,13 @@ public class Resultado
 
     [JsonPropertyName("situacaoBoleto")]
     public string? SituacaoBoleto { get; set; }
+
+    // Campos extras que o seu JSON gigante trouxe:
+    [JsonPropertyName("identificacaoBoletoEmpresa")]
+    public string? IdentificacaoBoletoEmpresa { get; set; }
+
+    [JsonPropertyName("numeroContratoCobranca")]
+    public long NumeroContratoCobranca { get; set; }
 }
 
 public class PagadorResponse
@@ -64,4 +73,7 @@ public class PagadorResponse
 
     [JsonPropertyName("nome")]
     public string? Nome { get; set; }
+
+    [JsonPropertyName("endereco")]
+    public string? Endereco { get; set; }
 }

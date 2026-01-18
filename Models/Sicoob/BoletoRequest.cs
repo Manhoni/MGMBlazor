@@ -8,44 +8,43 @@ public class BoletoRequest
     public long NumeroCliente { get; set; }
 
     [JsonPropertyName("codigoModalidade")]
-    public int CodigoModalidade { get; set; }
+    public int CodigoModalidade { get; set; } = 1;
 
     [JsonPropertyName("numeroContaCorrente")]
     public long NumeroContaCorrente { get; set; }
 
     [JsonPropertyName("codigoEspecieDocumento")]
-    public string CodigoEspecieDocumento { get; set; } = string.Empty;
+    public string CodigoEspecieDocumento { get; set; } = "DM";
 
     [JsonPropertyName("dataEmissao")]
-    public DateTimeOffset DataEmissao { get; set; }
+    public string DataEmissao { get; set; } = DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00");
 
     [JsonPropertyName("seuNumero")]
-    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-    public long SeuNumero { get; set; }
+    public string SeuNumero { get; set; } = string.Empty;
 
     [JsonPropertyName("identificacaoEmissaoBoleto")]
-    public int IdentificacaoEmissaoBoleto { get; set; }
+    public int IdentificacaoEmissaoBoleto { get; set; } = 2;
 
     [JsonPropertyName("identificacaoDistribuicaoBoleto")]
-    public int IdentificacaoDistribuicaoBoleto { get; set; }
+    public int IdentificacaoDistribuicaoBoleto { get; set; } = 2;
 
     [JsonPropertyName("valor")]
     public decimal Valor { get; set; }
 
     [JsonPropertyName("dataVencimento")]
-    public DateTimeOffset DataVencimento { get; set; }
+    public string DataVencimento { get; set; } = string.Empty;
 
     [JsonPropertyName("tipoDesconto")]
-    public int TipoDesconto { get; set; }
+    public int TipoDesconto { get; set; } = 0;
 
     [JsonPropertyName("tipoMulta")]
-    public int TipoMulta { get; set; }
+    public int TipoMulta { get; set; } = 0;
 
     [JsonPropertyName("tipoJurosMora")]
-    public int TipoJurosMora { get; set; }
+    public int TipoJurosMora { get; set; } = 3;
 
     [JsonPropertyName("numeroParcela")]
-    public int NumeroParcela { get; set; }
+    public int NumeroParcela { get; set; } = 1;
 
     [JsonPropertyName("pagador")]
     public PagadorRequest Pagador { get; set; } = new();
@@ -72,8 +71,7 @@ public class PagadorRequest
     public string Cidade { get; set; } = string.Empty;
 
     [JsonPropertyName("cep")]
-    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-    public long Cep { get; set; }
+    public string Cep { get; set; } = string.Empty; 
 
     [JsonPropertyName("uf")]
     public string Uf { get; set; } = string.Empty;

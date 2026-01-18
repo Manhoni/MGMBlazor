@@ -48,7 +48,7 @@ public class NfseService : INfseService
     {
         // Busca o maior VendaId já salvo no banco. Se não houver nenhum, começa do 1 (ou do número que você definir)
         var ultimoRPS = await _context.NotasFiscaisEmitidas
-            .MaxAsync(n => (int?)n.VendaId) ?? 4; // Se quiser começar de um número específico, mude o 0 para 100, por exemplo.
+            .MaxAsync(n => (int?)n.RpsNumero) ?? 4; // Se quiser começar de um número específico, mude o 0 para 100, por exemplo.
 
         return ultimoRPS + 1;
     }
@@ -103,19 +103,22 @@ public class NfseService : INfseService
     }
 
     private async Task SalvarNoBanco(NotaFiscal nota, RespostaEmissao resposta)
-{
-    var notaEmitida = new NotaFiscalEmitida
     {
-        VendaId = nota.Id, // Grava o número do RPS que acabamos de usar
-        DataEmissao = DateTime.UtcNow,
-        NumeroNota = resposta.NumeroNota,
-        CodigoVerificacao = resposta.CodigoVerificacao,
-        XmlRetorno = resposta.XmlRetorno,
-        Status = StatusNfse.Faturada
-    };
+        var notaEmitida = new NotaFiscalEmitida
+        {
+            RpsNumero = nota.Id, // Grava o número do RPS que acabamos de usar
+            VendaId = 100, // tanto faz a empresa que escolhe (preciso acertar a logica para que ela seja inserida pelo usuario e volte pelo Response)
+            DataEmissao = DateTime.UtcNow,
+            NumeroNota = resposta.NumeroNota,
+            CodigoVerificacao = resposta.CodigoVerificacao,
+            XmlRetorno = resposta.XmlRetorno,
+            Status = StatusNfse.Faturada
+        };
 
-    _context.NotasFiscaisEmitidas.Add(notaEmitida);
-    await _context.SaveChangesAsync();
-    Console.WriteLine($"[BANCO] Nota {resposta.NumeroNota} salva com sucesso!");
-}
+        _context.NotasFiscaisEmitidas.Add(notaEmitida);
+        await _context.SaveChangesAsync();
+
+        resposta.IdInternoNoBanco = notaEmitida.Id; 
+        Console.WriteLine($"[BANCO] Nota {resposta.NumeroNota} salva com sucesso!");
+    }
 }
