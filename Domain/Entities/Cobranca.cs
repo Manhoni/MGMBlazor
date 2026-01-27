@@ -11,7 +11,7 @@ public class Cobranca
 
     // Relacionamento com a Nota Fiscal
     public int NotaFiscalEmitidaId { get; set; }
-    
+
     [ForeignKey("NotaFiscalEmitidaId")]
     public virtual NotaFiscalEmitida NotaFiscalEmitida { get; set; } = null!;
 
@@ -22,8 +22,9 @@ public class Cobranca
     public string LinhaDigitavel { get; set; } = string.Empty;
 
     public string? CodigoBarras { get; set; }
-    
+
     public string? QrCodePix { get; set; }
+    public string? PdfBase64 { get; set; }
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal Valor { get; set; }

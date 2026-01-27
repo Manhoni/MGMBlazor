@@ -17,16 +17,16 @@ public class BoletoRequest
     public string CodigoEspecieDocumento { get; set; } = "DM";
 
     [JsonPropertyName("dataEmissao")]
-    public string DataEmissao { get; set; } = DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00");
+    public string DataEmissao { get; set; } = "2018-09-20"; // DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00")
 
     [JsonPropertyName("seuNumero")]
     public string SeuNumero { get; set; } = string.Empty;
 
     [JsonPropertyName("identificacaoEmissaoBoleto")]
-    public int IdentificacaoEmissaoBoleto { get; set; } = 2;
+    public int IdentificacaoEmissaoBoleto { get; set; } = 2; //2
 
     [JsonPropertyName("identificacaoDistribuicaoBoleto")]
-    public int IdentificacaoDistribuicaoBoleto { get; set; } = 2;
+    public int IdentificacaoDistribuicaoBoleto { get; set; } = 2; //2
 
     [JsonPropertyName("valor")]
     public decimal Valor { get; set; }
@@ -41,7 +41,7 @@ public class BoletoRequest
     public int TipoMulta { get; set; } = 0;
 
     [JsonPropertyName("tipoJurosMora")]
-    public int TipoJurosMora { get; set; } = 3;
+    public int TipoJurosMora { get; set; } = 3; //3
 
     [JsonPropertyName("numeroParcela")]
     public int NumeroParcela { get; set; } = 1;
@@ -50,7 +50,10 @@ public class BoletoRequest
     public PagadorRequest Pagador { get; set; } = new();
 
     [JsonPropertyName("numeroContratoCobranca")]
-    public long NumeroContratoCobranca { get; set; }
+    public long NumeroContratoCobranca { get; set; } = 1;
+
+    [JsonPropertyName("gerarPdf")]
+    public bool GerarPdf { get; set; } = true;
 }
 
 public class PagadorRequest
@@ -71,7 +74,7 @@ public class PagadorRequest
     public string Cidade { get; set; } = string.Empty;
 
     [JsonPropertyName("cep")]
-    public string Cep { get; set; } = string.Empty; 
+    public string Cep { get; set; } = string.Empty;
 
     [JsonPropertyName("uf")]
     public string Uf { get; set; } = string.Empty;

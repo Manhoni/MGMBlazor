@@ -4,6 +4,7 @@ using MGMBlazor.Models.Sicoob;
 using MGMBlazor.Domain.Entities;
 using MGMBlazor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace MGMBlazor.Services.Sicoob;
 
@@ -28,15 +29,15 @@ public class SicoobService : ISicoobService
 
     private string GetBaseUrl()
     {
-        return IsSandbox() 
-            ? "https://sandbox.sicoob.com.br/sicoob/sandbox/cobranca-bancaria/v3" 
+        return IsSandbox()
+            ? _config["SicoobConfig:UrlSandbox"]!
             : _config["SicoobConfig:Api-cobranca-bancaria-Url"]!;
     }
 
     private string GetClientId()
     {
-        return IsSandbox() 
-            ? _config["SicoobConfig:ClientIdSandbox"]! 
+        return IsSandbox()
+            ? _config["SicoobConfig:ClientIdSandbox"]!
             : _config["SicoobConfig:ClientId"]!;
     }
 
@@ -48,7 +49,7 @@ public class SicoobService : ISicoobService
         {
             Console.WriteLine("[DEBUG-SICOOB] Ambiente: SANDBOX. Usando Token estático do appsettings.");
             _accessToken = _config["SicoobConfig:TokenSandbox"];
-            return; 
+            return;
         }
 
         if (!string.IsNullOrEmpty(_accessToken) && DateTime.Now < _tokenExpiration.AddSeconds(-30))
@@ -67,7 +68,7 @@ public class SicoobService : ISicoobService
         });
 
         var response = await _httpClient.PostAsync(_config["SicoobConfig:AuthUrl"], requestBody);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var erro = await response.Content.ReadAsStringAsync();
@@ -79,7 +80,7 @@ public class SicoobService : ISicoobService
         using var doc = JsonDocument.Parse(json);
         _accessToken = doc.RootElement.GetProperty("access_token").GetString();
         _tokenExpiration = DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32());
-        
+
         Console.WriteLine("[DEBUG-SICOOB] Produção: Token obtido com sucesso!");
     }
 
@@ -98,11 +99,26 @@ public class SicoobService : ISicoobService
         await EnsureTokenAsync();
         SetDefaultHeaders();
 
+        // Configuração para ignorar nulos e seguir a risca o que o Sicoob quer
+        var options = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            PropertyNameCaseInsensitive = true,
+            WriteIndented = false
+        };
+
+        // --- json para DEBUG ---
+        string jsonParaEnviar = JsonSerializer.Serialize(request, options);
+        Console.WriteLine("\n[DEBUG-SICOOB] JSON QUE O C# ESTÁ GERANDO:");
+        Console.WriteLine(jsonParaEnviar);
+        Console.WriteLine("-------------------------------------------\n");
+        // ----------------------------------------
+
         string url = $"{GetBaseUrl()}/boletos";
         Console.WriteLine($"[DEBUG-SICOOB] Enviando inclusão de boleto para: {url}");
 
         // O Sicoob V3 exige envio em Array []
-        var response = await _httpClient.PostAsJsonAsync(url, new[] { request });
+        var response = await _httpClient.PostAsJsonAsync(url, request, options);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -119,8 +135,19 @@ public class SicoobService : ISicoobService
 
             // Tratamento de Data para o Postgres (Tryparse para não quebrar com string vazia)
             DateTime dataVenc = DateTime.Now;
-            if (DateTime.TryParse(boletoGerado.Resultado.DataVencimento, out var dtParsed)) {
+            if (DateTime.TryParse(boletoGerado.Resultado.DataVencimento, out var dtParsed))
+            {
                 dataVenc = dtParsed.ToUniversalTime(); // Postgres prefere UTC
+            }
+
+            string? pdfFinal = null;
+            if (!string.IsNullOrEmpty(boletoGerado.Resultado.PdfBoleto))
+            {
+                // Limpeza preventiva para produção
+                pdfFinal = boletoGerado.Resultado.PdfBoleto.Trim().Replace("\n", "").Replace("\r", "");
+
+                // Verificação de integridade mínima para Produção
+                if (pdfFinal.Length % 4 != 0) pdfFinal = null;
             }
 
             // SALVANDO NO BANCO DE DADOS
@@ -134,7 +161,8 @@ public class SicoobService : ISicoobService
                 Valor = boletoGerado.Resultado.Valor,
                 DataVencimento = dataVenc,
                 Status = "Pendente",
-                DataCadastro = DateTime.UtcNow
+                DataCadastro = DateTime.UtcNow,
+                PdfBase64 = pdfFinal
             };
 
             _dbContext.Cobrancas.Add(novaCobranca);
@@ -152,7 +180,7 @@ public class SicoobService : ISicoobService
 
         var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
         var url = $"{GetBaseUrl()}/boletos?numeroCliente={numeroCliente}&codigoModalidade=1&nossoNumero={nossoNumero}";
-        
+
         Console.WriteLine($"[DEBUG-SICOOB] Consultando boleto: {nossoNumero}");
         return await _httpClient.GetFromJsonAsync<BoletoResponse>(url);
     }
@@ -162,12 +190,12 @@ public class SicoobService : ISicoobService
         await EnsureTokenAsync();
         SetDefaultHeaders();
 
-        var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
+        long numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
         var body = new { numeroCliente = numeroCliente, codigoModalidade = 1 };
-        
+
         Console.WriteLine($"[DEBUG-SICOOB] Solicitando baixa do boleto: {nossoNumero}");
-        var response = await _httpClient.PatchAsJsonAsync($"{GetBaseUrl()}/boletos/baixa/{nossoNumero}", body);
-        
+        var response = await _httpClient.PostAsJsonAsync($"{GetBaseUrl()}/boletos/{nossoNumero}/baixar", body);
+
         if (response.IsSuccessStatusCode)
         {
             var cobranca = await _dbContext.Cobrancas.FirstOrDefaultAsync(c => c.NossoNumero == nossoNumero);

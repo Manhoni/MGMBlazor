@@ -15,6 +15,8 @@ using MGMBlazor.Models.Sicoob;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
 // ---------- CONFIGURAÇÃO DE CERTIFICADO DINÂMICO ----------
 // Removemos a duplicação. O .NET decide aqui qual provider usar.
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -32,7 +34,7 @@ HttpClientHandler CriarHandlerComCertificado(IServiceProvider sp)
     var handler = new HttpClientHandler();
     var certProvider = sp.GetRequiredService<ICertificateProvider>();
     var cert = certProvider.ObterCertificado();
-    
+
     if (cert != null)
     {
         handler.ClientCertificates.Add(cert);
@@ -61,12 +63,20 @@ builder.Services.AddScoped<FintelSoapClient>();
 builder.Services.AddHttpClient<INfseService, NfseService>()
     .ConfigurePrimaryHttpMessageHandler(sp => CriarHandlerComCertificado(sp));
 
-// Prepara o SicoobService (ele usará o mesmo certificado automaticamente)
+// Prepara o SicoobService (ele usará o mesmo certificado automaticamente, se não for Sandbox)
 builder.Services.AddHttpClient<ISicoobService, SicoobService>()
     .ConfigurePrimaryHttpMessageHandler(sp => CriarHandlerComCertificado(sp));
 
-
 var app = builder.Build();
+
+app.Logger.LogInformation(
+    "Ambiente atual: {env}",
+    app.Environment.EnvironmentName);
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
 
 // ---------- TESTE DE HOMOLOGAÇÃO (MANTIDO) ----------
 using (var scope = app.Services.CreateScope())
@@ -77,7 +87,7 @@ using (var scope = app.Services.CreateScope())
     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
     bool isSandbox = config.GetValue<bool>("SicoobConfig:UsarSandbox");
 
-    try 
+    try
     {
         var proximoRPS = await nfseService.ObterProximoNumeroRpsAsync();
         Console.WriteLine($"Gerando nota com RPS: {proximoRPS}");
@@ -110,14 +120,17 @@ using (var scope = app.Services.CreateScope())
         if (respostaNfse.Sucesso)
         {
             Console.WriteLine("\n--- VERIFICAÇÃO DE SEGURANÇA SICOOB ---");
-            
+
             // Verificamos o que o sistema está lendo do appsettings
             string urlUsada = isSandbox ? config["SicoobConfig:UrlSandbox"]! : config["SicoobConfig:Api-cobranca-bancaria-Url"]!;
-            
-            if (isSandbox) {
+
+            if (isSandbox)
+            {
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.WriteLine("AMBIENTE: [SANDBOX] - NENHUM BOLETO REAL SERÁ GERADO.");
-            } else {
+            }
+            else
+            {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("ATENÇÃO: AMBIENTE [PRODUÇÃO]! BOLETO REAL COM CUSTO BANCÁRIO.");
             }
@@ -126,13 +139,19 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("---------------------------------------\n");
 
             // Se estiver escrito SANDBOX acima, pode descomentar a linha abaixo sem medo:
-            
-            var boletoReq = new BoletoRequest {
-                NumeroCliente = isSandbox ? 25546454 : config.GetValue<long>("SicoobConfig:NumeroCliente"),
+
+            long numeroClienteSandbox = 25546454;
+
+            var boletoReq = new BoletoRequest
+            {
+                NumeroCliente = isSandbox ? numeroClienteSandbox : config.GetValue<long>("SicoobConfig:NumeroCliente"),
+                NumeroContaCorrente = isSandbox ? 0 : config.GetValue<long>("SicoobConfig:NumeroContaCorrente"),
                 Valor = notaTeste.Servico.Valor,
-                SeuNumero = "001JAN", //o usuario coloca o que quiser e pode contar letras
-                DataVencimento = DateTime.Now.AddDays(7).ToString("yyyy-MM-ddT00:00:00-03:00"),
-                Pagador = new PagadorRequest {
+                SeuNumero = respostaNfse.NumeroNota, //o usuario coloca o que quiser e pode contar letras
+                //DataVencimento = DateTime.Now.AddDays(7).ToString("yyyy-MM-ddT00:00:00-03:00"),
+                DataVencimento = "2018-09-20", // Data fixa para evitar problemas de datas em testes futuros
+                Pagador = new PagadorRequest
+                {
                     Nome = notaTeste.Tomador.RazaoSocial,
                     NumeroCpfCnpj = notaTeste.Tomador.Cnpj,
                     Endereco = "Rua Teste, 123",
@@ -145,11 +164,73 @@ using (var scope = app.Services.CreateScope())
 
             // PODE DESCOMENTAR AQUI SE O LOG ACIMA DISSER SANDBOX:
             var respBoleto = await sicoobService.IncluirBoletoAsync(respostaNfse.IdInternoNoBanco, boletoReq);
-            
-            if (respBoleto?.Resultado != null) {
+
+            if (respBoleto?.Resultado != null)
+            {
                 Console.WriteLine($"BOLETO SANDBOX GERADO! Nosso Número: {respBoleto.Resultado.NossoNumero}");
                 Console.WriteLine($"   Linha Digitável: {respBoleto.Resultado.LinhaDigitavel}");
                 Console.WriteLine($"   ID Vinculado no Banco: {respostaNfse.IdInternoNoBanco}");
+
+                long nossoNumeroGerado = respBoleto.Resultado.NossoNumero;
+
+                if (!string.IsNullOrEmpty(respBoleto.Resultado.PdfBoleto))
+                {
+                    string base64Original = respBoleto.Resultado.PdfBoleto;
+
+                    // --- DEBUG: RAIO-X DO BASE64 ---
+                    Console.WriteLine("\n[DEBUG-PDF] Verificando integridade do Base64...");
+                    Console.WriteLine($"Tamanho Total: {base64Original.Length} caracteres");
+                    Console.WriteLine($"Início (50 chrs): {base64Original.Substring(0, Math.Min(50, base64Original.Length))}");
+                    Console.WriteLine($"Fim (10 chrs): {base64Original.Substring(Math.Max(0, base64Original.Length - 10))}");
+                    // -------------------------------
+
+                    // LIMPEZA RADICAL: Remove tudo que não for caractere válido de Base64
+                    // (Letras, Números, +, /, =)
+                    string base64Limpo = new string(base64Original
+                        .Where(c => char.IsLetterOrDigit(c) || c == '/' || c == '+' || c == '=')
+                        .ToArray());
+
+                    // AJUSTE DE PADDING (O "enchimento" do Base64)
+                    // O tamanho da string Base64 deve ser múltiplo de 4. Se não for, o C# dá erro.
+                    int mod4 = base64Limpo.Length % 4;
+                    if (mod4 > 0)
+                    {
+                        base64Limpo += new string('=', 4 - mod4);
+                        Console.WriteLine($"[DEBUG-PDF] Ajustando padding: Adicionados {4 - mod4} caracteres '='");
+                    }
+
+                    try
+                    {
+                        byte[] pdfBytes = Convert.FromBase64String(base64Limpo);
+                        string nomeArquivo = $"Boleto_Teste_{respBoleto.Resultado.NossoNumero}.pdf";
+                        await File.WriteAllBytesAsync(nomeArquivo, pdfBytes);
+
+                        Console.WriteLine($"✅ [PDF] Sucesso! Salvo em: {nomeArquivo}");
+                    }
+                    catch (FormatException ex)
+                    {
+                        Console.WriteLine($"❌ Falha crítica no Base64 após limpeza: {ex.Message}");
+                        // Se falhar, vamos imprimir a string limpa para você copiar e testar num site externo
+                        // Console.WriteLine($"String Limpa: {base64Limpo}"); 
+                    }
+                }
+
+                // // --- TESTE DE CONSULTA ---
+                // Console.WriteLine($"⏳ Testando CONSULTA do boleto: {nossoNumeroGerado}...");
+                // var boletoConsultado = await sicoobService.ConsultarBoletoAsync(nossoNumeroGerado);
+                // if (boletoConsultado != null)
+                // {
+                //     Console.WriteLine($"✅ Consulta OK! Situação no Banco: {boletoConsultado.Resultado?.SituacaoBoleto}");
+                // }
+
+                // // --- TESTE DE BAIXA (CANCELAMENTO) ---
+                // // CUIDADO: No sandbox ele pode dar 204 (sucesso), mas o GET continuar dizendo "Aberto" pois o mock não muda.
+                // Console.WriteLine($"⏳ Testando BAIXA do boleto: {nossoNumeroGerado}...");
+                // bool baixou = await sicoobService.BaixarBoletoAsync(nossoNumeroGerado);
+                // if (baixou)
+                // {
+                //     Console.WriteLine("✅ Comando de BAIXA enviado com sucesso!");
+                // }
             }
         }
         else

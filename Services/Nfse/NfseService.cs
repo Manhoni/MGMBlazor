@@ -48,7 +48,7 @@ public class NfseService : INfseService
     {
         // Busca o maior VendaId já salvo no banco. Se não houver nenhum, começa do 1 (ou do número que você definir)
         var ultimoRPS = await _context.NotasFiscaisEmitidas
-            .MaxAsync(n => (int?)n.RpsNumero) ?? 4; // Se quiser começar de um número específico, mude o 0 para 100, por exemplo.
+            .MaxAsync(n => (int?)n.RpsNumero) ?? 8; // Se quiser começar de um número específico, mude o 0 para 100, por exemplo.
 
         return ultimoRPS + 1;
     }

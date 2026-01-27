@@ -2,8 +2,11 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "dotnet",
-			"task": "build",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build"
+			],
 			"group": "build",
 			"problemMatcher": [],
 			"label": "dotnet: build"
