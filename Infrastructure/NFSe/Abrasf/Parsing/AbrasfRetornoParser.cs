@@ -20,9 +20,11 @@ public class AbrasfRetornoParser : INfseRetornoParser
         {
             var soapDoc = XDocument.Parse(xmlSoap);
 
-            // 1. Extrai o conteúdo da tag <return>
-            var resultadoRaw = soapDoc.Descendants().FirstOrDefault(x => 
-                x.Name.LocalName == "GerarNfseResult" || 
+            Console.WriteLine("\n[DEBUG-XML-SOAP] " + xmlSoap);
+
+            // Busca o conteúdo de QUALQUER tag que termine em "Result" ou seja "return"
+            var resultadoRaw = soapDoc.Descendants().FirstOrDefault(x =>
+                x.Name.LocalName.EndsWith("Result") ||
                 x.Name.LocalName == "return")?.Value;
 
             if (string.IsNullOrEmpty(resultadoRaw))
@@ -36,7 +38,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
             // Console.WriteLine("DEBUG XML INTERNO: " + resultadoRaw);
 
             var xmlInterno = XDocument.Parse(resultadoRaw);
-            
+
             // Definimos o Namespace que vimos no seu Postman
             XNamespace nsAbrasf = "http://www.abrasf.org.br/nfse.xsd";
 
@@ -58,12 +60,13 @@ public class AbrasfRetornoParser : INfseRetornoParser
             // 3. BUSCA SUCESSO (ComplNfse)
             // No sucesso, a estrutura é: ListaNfse -> CompNfse -> Nfse -> InfNfse
             var infNfse = xmlInterno.Descendants().FirstOrDefault(x => x.Name.LocalName == "InfNfse");
-            
+
             if (infNfse != null)
             {
                 resposta.Sucesso = true;
                 resposta.NumeroNota = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "Numero")?.Value;
                 resposta.CodigoVerificacao = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "CodigoVerificacao")?.Value;
+                resposta.XmlRetorno = xmlInterno.ToString(); // Armazena o XML recuperado
             }
             else
             {
@@ -78,78 +81,78 @@ public class AbrasfRetornoParser : INfseRetornoParser
         }
     }
 }
-    // public void Processar(string xmlSoap, RespostaEmissao resposta)
-    // {
-    //     try
-    //     {
-    //         var soapDoc = XDocument.Parse(xmlSoap);
+// public void Processar(string xmlSoap, RespostaEmissao resposta)
+// {
+//     try
+//     {
+//         var soapDoc = XDocument.Parse(xmlSoap);
 
-    //         XNamespace soapNs = "http://schemas.xmlsoap.org/soap/envelope/";
-    //         XNamespace fintelNs = "https://nfse-ws.ecity.maringa.pr.gov.br/v2.01";
-    //         XNamespace abrasfNs = "http://www.abrasf.org.br/nfse.xsd";
+//         XNamespace soapNs = "http://schemas.xmlsoap.org/soap/envelope/";
+//         XNamespace fintelNs = "https://nfse-ws.ecity.maringa.pr.gov.br/v2.01";
+//         XNamespace abrasfNs = "http://www.abrasf.org.br/nfse.xsd";
 
-    //         // 1. SOAP Fault
-    //         var fault = soapDoc.Descendants(soapNs + "Fault").FirstOrDefault();
-    //         if (fault != null)
-    //         {
-    //             resposta.Sucesso = false;
-    //             resposta.Erros.Add("SOAP Fault: " + fault.Value);
-    //             return;
-    //         }
+//         // 1. SOAP Fault
+//         var fault = soapDoc.Descendants(soapNs + "Fault").FirstOrDefault();
+//         if (fault != null)
+//         {
+//             resposta.Sucesso = false;
+//             resposta.Erros.Add("SOAP Fault: " + fault.Value);
+//             return;
+//         }
 
-    //         // 2. Extrair XML interno do GerarNfseResult
-    //         var resultadoRaw = soapDoc
-    //             .Descendants(fintelNs + "GerarNfseResult")
-    //             .FirstOrDefault()
-    //             ?.Value;
+//         // 2. Extrair XML interno do GerarNfseResult
+//         var resultadoRaw = soapDoc
+//             .Descendants(fintelNs + "GerarNfseResult")
+//             .FirstOrDefault()
+//             ?.Value;
 
-    //         if (string.IsNullOrWhiteSpace(resultadoRaw))
-    //         {
-    //             resposta.Sucesso = false;
-    //             resposta.Erros.Add("Retorno vazio do WebService.");
-    //             return;
-    //         }
+//         if (string.IsNullOrWhiteSpace(resultadoRaw))
+//         {
+//             resposta.Sucesso = false;
+//             resposta.Erros.Add("Retorno vazio do WebService.");
+//             return;
+//         }
 
-    //         var xmlInterno = XDocument.Parse(resultadoRaw);
+//         var xmlInterno = XDocument.Parse(resultadoRaw);
 
-    //         // 3. Mensagens de erro ABRASF
-    //         var mensagensErro = xmlInterno.Descendants(abrasfNs + "MensagemRetorno");
-    //         if (mensagensErro.Any())
-    //         {
-    //             resposta.Sucesso = false;
+//         // 3. Mensagens de erro ABRASF
+//         var mensagensErro = xmlInterno.Descendants(abrasfNs + "MensagemRetorno");
+//         if (mensagensErro.Any())
+//         {
+//             resposta.Sucesso = false;
 
-    //             foreach (var erro in mensagensErro)
-    //             {
-    //                 var codigo = erro.Element(abrasfNs + "Codigo")?.Value;
-    //                 var mensagem = erro.Element(abrasfNs + "Mensagem")?.Value;
-    //                 var correcao = erro.Element(abrasfNs + "Correcao")?.Value;
+//             foreach (var erro in mensagensErro)
+//             {
+//                 var codigo = erro.Element(abrasfNs + "Codigo")?.Value;
+//                 var mensagem = erro.Element(abrasfNs + "Mensagem")?.Value;
+//                 var correcao = erro.Element(abrasfNs + "Correcao")?.Value;
 
-    //                 resposta.Erros.Add($"{codigo} - {mensagem} {(string.IsNullOrEmpty(correcao) ? "" : $"(Correção: {correcao})")}");
-    //             }
+//                 resposta.Erros.Add($"{codigo} - {mensagem} {(string.IsNullOrEmpty(correcao) ? "" : $"(Correção: {correcao})")}");
+//             }
 
-    //             return;
-    //         }
+//             return;
+//         }
 
-    //         // 4. Dados da NFSe emitida
-    //         var infNfse = xmlInterno
-    //             .Descendants(abrasfNs + "InfNfse")
-    //             .FirstOrDefault();
+//         // 4. Dados da NFSe emitida
+//         var infNfse = xmlInterno
+//             .Descendants(abrasfNs + "InfNfse")
+//             .FirstOrDefault();
 
-    //         if (infNfse == null)
-    //         {
-    //             resposta.Sucesso = false;
-    //             resposta.Erros.Add("NFSe não encontrada no retorno.");
-    //             return;
-    //         }
+//         if (infNfse == null)
+//         {
+//             resposta.Sucesso = false;
+//             resposta.Erros.Add("NFSe não encontrada no retorno.");
+//             return;
+//         }
 
-    //         resposta.NumeroNota = infNfse.Element(abrasfNs + "Numero")?.Value;
-    //         resposta.CodigoVerificacao = infNfse.Element(abrasfNs + "CodigoVerificacao")?.Value;
-    //         resposta.Sucesso = true;
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         resposta.Sucesso = false;
-    //         resposta.Erros.Add($"Erro ao processar retorno NFSe: {ex.Message}");
-    //     }
-    // }
+//         resposta.NumeroNota = infNfse.Element(abrasfNs + "Numero")?.Value;
+//         resposta.CodigoVerificacao = infNfse.Element(abrasfNs + "CodigoVerificacao")?.Value;
+//         resposta.Sucesso = true;
+//     }
+//     catch (Exception ex)
+//     {
+//         resposta.Sucesso = false;
+//         resposta.Erros.Add($"Erro ao processar retorno NFSe: {ex.Message}");
+//     }
+// }
 

@@ -52,6 +52,68 @@ public class NfseService : INfseService
 
         return ultimoRPS + 1;
     }
+    public async Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero)
+    {
+        Console.WriteLine($"[CONSULTA] Verificando RPS {rpsNumero}...");
+
+        var resposta = new RespostaEmissao(); // Cria o objeto que será preenchido
+
+        try
+        {
+            // 1. Monta o XDocument (Padrão que você definiu)
+            var xmlDoc = _builder.MontarXmlConsultaRps(rpsNumero);
+            // 2. Validação XSD (Usando a variável do construtor)
+            _validator.Validar(xmlDoc, _pastaSchemas);
+            // 3. Certificado
+            var certificado = _certificateProvider.ObterCertificado();
+            // 4. Assina usando o novo método de consulta
+            var xmlAssinado = _signer.AssinarElemento(xmlDoc, "ConsultarNfseRpsRequest", certificado);
+            // 5. Envia via SOAP
+            var xmlRespostaSoap = await _soapClient.ConsultarNfsePorRpsAsync(xmlAssinado, certificado);
+            // 6. Processa preenchendo o objeto 'resposta' (Seu padrão void Processar)
+            _retornoParser.Processar(xmlRespostaSoap, resposta);
+
+            if (resposta.Sucesso)
+            {
+                Console.WriteLine($"[CONSULTA] RPS {rpsNumero} já é a Nota {resposta.NumeroNota}. Sincronizando banco...");
+
+                // Verifica se já temos essa nota no banco (pelo NumeroNota da prefeitura)
+                var existe = await _context.NotasFiscaisEmitidas.AnyAsync(n => n.NumeroNota == resposta.NumeroNota);
+                if (!existe)
+                {
+                    // Aqui você chama o seu SalvarNoBancoAposRecuperacao
+                    await SalvarNoBancoAposRecuperacao(rpsNumero, resposta);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            resposta.Sucesso = false;
+            resposta.Erros.Add($"Erro na consulta: {ex.Message}");
+        }
+
+        return resposta;
+    }
+
+    private async Task SalvarNoBancoAposRecuperacao(int rpsNumero, RespostaEmissao resposta)
+    {
+        var notaEmitida = new NotaFiscalEmitida
+        {
+            RpsNumero = rpsNumero,
+            VendaId = 0, // Id de venda desconhecido na recuperação
+            DataEmissao = DateTime.UtcNow,
+            NumeroNota = resposta.NumeroNota,
+            CodigoVerificacao = resposta.CodigoVerificacao,
+            XmlRetorno = resposta.XmlRetorno,
+            Status = StatusNfse.Faturada
+        };
+
+        _context.NotasFiscaisEmitidas.Add(notaEmitida);
+        await _context.SaveChangesAsync();
+
+        // Atualiza o ID interno na resposta para o fluxo do boleto seguir
+        resposta.IdInternoNoBanco = notaEmitida.Id;
+    }
 
     public async Task<RespostaEmissao> EmitirNotaAsync(NotaFiscal nota)
     {
@@ -61,15 +123,12 @@ public class NfseService : INfseService
         {
             // 1. Geração do XML
             var xmlDoc = _builder.GerarXml(nota);
-
             // 2. Validação XSD (Usando a variável do construtor)
             _validator.Validar(xmlDoc, _pastaSchemas);
-
             // 3. Certificado
             var certificado = _certificateProvider.ObterCertificado();
-
             // 4. Assinatura (Retorna String)
-            string xmlAssinado = _signer.AssinarLoteRps(xmlDoc, certificado);
+            string xmlAssinado = _signer.AssinarElemento(xmlDoc, "InfDeclaracaoPrestacaoServico", certificado);
             resposta.XmlEnviado = xmlAssinado;
 
             // GRAVA O ARQUIVO PARA COPIAR PARA O POSTMAN
@@ -84,7 +143,7 @@ public class NfseService : INfseService
             File.WriteAllText("CONTEUDO_PARA_POSTMAN.txt", xmlParaPostman);
 
             string xmlRetorno = await _soapClient.EnviarGerarNfseAsync(xmlAssinado, certificado);
-            resposta.XmlRetorno = xmlRetorno;
+            //resposta.XmlRetorno = xmlRetorno;
 
             _retornoParser.Processar(xmlRetorno, resposta);
 
@@ -118,7 +177,67 @@ public class NfseService : INfseService
         _context.NotasFiscaisEmitidas.Add(notaEmitida);
         await _context.SaveChangesAsync();
 
-        resposta.IdInternoNoBanco = notaEmitida.Id; 
+        resposta.IdInternoNoBanco = notaEmitida.Id;
         Console.WriteLine($"[BANCO] Nota {resposta.NumeroNota} salva com sucesso!");
+    }
+
+    public async Task<RespostaEmissao> CancelarNotaAsync(string numeroNota, string codigoMotivo = "1")
+    {
+        var resposta = new RespostaEmissao();
+        try
+        {
+            var xmlDoc = _builder.MontarXmlCancelamento(numeroNota, codigoMotivo);
+            // Validação XSD
+            _validator.Validar(xmlDoc, _pastaSchemas);
+            // Certificado
+            var cert = _certificateProvider.ObterCertificado();
+            // Tag específica para cancelamento
+            var xmlAssinado = _signer.AssinarElemento(xmlDoc, "InfPedidoCancelamento", cert);
+
+            var respSoap = await _soapClient.CancelarNfseAsync(xmlAssinado, cert);
+            _retornoParser.Processar(respSoap, resposta);
+
+            if (resposta.Sucesso)
+            {
+                //Atualize o status no banco para Cancelada
+                var notaCancelada = await _context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroNota);
+                if (notaCancelada != null)
+                {
+                    notaCancelada.Status = StatusNfse.Cancelada;
+                    _context.NotasFiscaisEmitidas.Update(notaCancelada);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            resposta.Sucesso = false;
+            resposta.Erros.Add($"Falha no cancelamento: {ex.Message}");
+            return resposta;
+        }
+
+        return resposta;
+    }
+    public async Task<RespostaEmissao> SubstituirNotaAsync(string numeroAntiga, NotaFiscal novaNota)
+    {
+        var resposta = new RespostaEmissao();
+        try
+        {
+            var xmlDoc = _builder.MontarXmlSubstituicao(numeroAntiga, novaNota);
+            _validator.Validar(xmlDoc, _pastaSchemas);
+            var cert = _certificateProvider.ObterCertificado();
+            string xmlAssinado = _signer.AssinarElemento(xmlDoc, "SubstituirNfseRequest", cert);
+
+            string xmlRetorno = await _soapClient.SubstituirNfseAsync(xmlAssinado, cert);
+            _retornoParser.Processar(xmlRetorno, resposta);
+
+            if (resposta.Sucesso) await SalvarNoBanco(novaNota, resposta);
+        }
+        catch (Exception ex)
+        {
+            resposta.Sucesso = false;
+            resposta.Erros.Add($"Falha na substituição: {ex.Message}");
+        }
+        return resposta;
     }
 }

@@ -7,5 +7,7 @@ public interface INfseService
 {
     Task<RespostaEmissao> EmitirNotaAsync(NotaFiscal nota);
     Task<int> ObterProximoNumeroRpsAsync();
+
+    Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero);
 }
 
