@@ -20,7 +20,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
         {
             var soapDoc = XDocument.Parse(xmlSoap);
 
-            Console.WriteLine("\n[DEBUG-XML-SOAP] " + xmlSoap);
+            //Console.WriteLine("\n[DEBUG-XML-SOAP no Parser] " + xmlSoap);
 
             // Busca o conteúdo de QUALQUER tag que termine em "Result" ou seja "return"
             var resultadoRaw = soapDoc.Descendants().FirstOrDefault(x =>
@@ -35,11 +35,11 @@ public class AbrasfRetornoParser : INfseRetornoParser
             }
 
             // --- DEBUG: Remova esta linha depois que funcionar ---
-            // Console.WriteLine("DEBUG XML INTERNO: " + resultadoRaw);
+            Console.WriteLine("DEBUG XML INTERNO: " + resultadoRaw);
 
             var xmlInterno = XDocument.Parse(resultadoRaw);
 
-            // Definimos o Namespace que vimos no seu Postman
+            // Definimos o Namespace ABRASF para facilitar buscas
             XNamespace nsAbrasf = "http://www.abrasf.org.br/nfse.xsd";
 
             // 2. BUSCA ERROS (Usando o Namespace e o LocalName juntos para não falhar)
@@ -59,7 +59,34 @@ public class AbrasfRetornoParser : INfseRetornoParser
 
             // 3. BUSCA SUCESSO (ComplNfse)
             // No sucesso, a estrutura é: ListaNfse -> CompNfse -> Nfse -> InfNfse
-            var infNfse = xmlInterno.Descendants().FirstOrDefault(x => x.Name.LocalName == "InfNfse");
+
+            // 1. Tenta achar o bloco da nota que SUBSTITUIU a antiga
+            var nfseSubstituidora = xmlInterno.Descendants().FirstOrDefault(x => x.Name.LocalName == "NfseSubstituidora");
+
+            // Busca confirmação de cancelamento
+            var cancelamento = xmlInterno.Descendants().FirstOrDefault(x => x.Name.LocalName == "RetCancelamento");
+
+            // 2. Define qual nó de informação usar
+            XElement? infNfse;
+
+            if (cancelamento != null)
+            {
+                resposta.Sucesso = true;
+                Console.WriteLine("[DEBUG-PARSER] Cancelamento confirmado pela prefeitura.");
+                return;
+            }
+
+            if (nfseSubstituidora != null)
+            {
+                // Se for substituição, pegamos a nota nova que está dentro de NfseSubstituidora
+                infNfse = nfseSubstituidora.Descendants().FirstOrDefault(x => x.Name.LocalName == "InfNfse");
+                Console.WriteLine("[DEBUG-PARSER] Detectada Substituição. Pegando dados da nota NOVA.");
+            }
+            else
+            {
+                // Se for emissão normal, pegamos a primeira que aparecer
+                infNfse = xmlInterno.Descendants().FirstOrDefault(x => x.Name.LocalName == "InfNfse");
+            }
 
             if (infNfse != null)
             {
@@ -67,6 +94,21 @@ public class AbrasfRetornoParser : INfseRetornoParser
                 resposta.NumeroNota = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "Numero")?.Value;
                 resposta.CodigoVerificacao = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "CodigoVerificacao")?.Value;
                 resposta.XmlRetorno = xmlInterno.ToString(); // Armazena o XML recuperado
+
+                var temCancelamento = xmlInterno.Descendants().Any(x => x.Name.LocalName == "NfseCancelamento");
+
+                // 2. Verifica o campo Status dentro do RPS
+                //var statusPrefeitura = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "Status")?.Value;
+
+                if (temCancelamento /*|| statusPrefeitura == "2"*/)
+                {
+                    Console.WriteLine("[DEBUG-PARSER] Esta nota consta como CANCELADA na prefeitura.");
+                    resposta.StatusRecuperado = StatusNfse.Cancelada;
+                }
+                else
+                {
+                    resposta.StatusRecuperado = StatusNfse.Faturada;
+                }
             }
             else
             {

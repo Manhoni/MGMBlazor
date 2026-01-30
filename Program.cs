@@ -89,9 +89,11 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        //var proximoRPS = await nfseService.ObterProximoNumeroRpsAsync();
-        int proximoRPS = 28; // Número fixo para evitar conflitos em múltiplos testes
+        var proximoRPS = await nfseService.ObterProximoNumeroRpsAsync();
+        //int proximoRPS = 1; // Número fixo para evitar conflitos em múltiplos testes
         Console.WriteLine($"Gerando nota com RPS: {proximoRPS}");
+
+        // --- TESTE COMPLETO DE EMISSÃO, SUBSTITUIÇÃO E CANCELAMENTO ---
 
         var consulta = await nfseService.VerificarSeRpsJaExisteNaPrefeitura(proximoRPS);
 
@@ -106,7 +108,7 @@ using (var scope = app.Services.CreateScope())
         }
         else
         {
-            Console.WriteLine($"Entrou na emissão de Nota {consulta.NumeroNota}).");
+            Console.WriteLine($"[DEBUG] Entrou na emissão de Nota - RPS {proximoRPS}.");
             var notaTeste = new NotaFiscal
             {
                 Id = proximoRPS,
@@ -132,6 +134,54 @@ using (var scope = app.Services.CreateScope())
             if (respostaNfse.Erros.Any())
                 Console.WriteLine("Erros: " + string.Join(Environment.NewLine, respostaNfse.Erros));
 
+            if (respostaNfse.Sucesso)
+            {
+                string numeroNotaOriginal = respostaNfse.NumeroNota!;
+                Console.WriteLine($"✅ Nota {numeroNotaOriginal} emitida!");
+
+                // PASSO 3: SUBSTITUIR (Trocar a nota original por uma nova)
+                int rpsNovo = proximoRPS + 1;
+                Console.WriteLine($"\n🔄 Substituindo Nota {numeroNotaOriginal} pelo novo RPS {rpsNovo}...");
+                var notaNova = new NotaFiscal
+                {
+                    Id = rpsNovo,
+                    Tomador = new Cliente
+                    {
+                        RazaoSocial = "SubsCliente NovaNota LTDA",
+                        Cnpj = "66645678000111",
+                        Email = "novo@nota.com",
+                        MunicipioCodigoIbge = "5005277"
+                    },
+                    Servico = new Servico
+                    {
+                        CodigoMunicipal = "0701",
+                        Descricao = "Exame ocupacional admissional",
+                        Valor = 60.00m
+                    }
+                };
+
+                var respSubst = await nfseService.SubstituirNotaAsync(numeroNotaOriginal, notaNova);
+
+                Console.WriteLine($"Sucesso NFSe: {respSubst.Sucesso}");
+                Console.WriteLine($"Número NFSe: {respSubst.NumeroNota}");
+                if (respSubst.Erros.Any())
+                    Console.WriteLine("Erros: " + string.Join(Environment.NewLine, respSubst.Erros));
+
+                if (respSubst.Sucesso)
+                {
+                    string numeroNotaNova = respSubst.NumeroNota!;
+                    Console.WriteLine($"✅ Substituição OK! Nova Nota: {numeroNotaNova}");
+
+                    //PASSO 4: CANCELAR (Matar a nota nova para limpar o rastro)
+                    Console.WriteLine($"\n🗑️ Cancelando a última nota ({numeroNotaNova})...");
+                    var respCancel = await nfseService.CancelarNotaAsync(numeroNotaNova, "1");
+
+                    if (respCancel.Sucesso)
+                        Console.WriteLine("✅ Ciclo completo! Nota cancelada com sucesso.");
+                }
+            }
+
+            /*
             if (respostaNfse.Sucesso)
             {
                 Console.WriteLine("\n--- VERIFICAÇÃO DE SEGURANÇA SICOOB ---");
@@ -188,47 +238,47 @@ using (var scope = app.Services.CreateScope())
 
                     long nossoNumeroGerado = respBoleto.Resultado.NossoNumero;
 
-                    // if (!string.IsNullOrEmpty(respBoleto.Resultado.PdfBoleto))
-                    // {
-                    //     string base64Original = respBoleto.Resultado.PdfBoleto;
+                    // // if (!string.IsNullOrEmpty(respBoleto.Resultado.PdfBoleto))
+                    // // {
+                    // //     string base64Original = respBoleto.Resultado.PdfBoleto;
 
-                    //     // --- DEBUG: RAIO-X DO BASE64 ---
-                    //     Console.WriteLine("\n[DEBUG-PDF] Verificando integridade do Base64...");
-                    //     Console.WriteLine($"Tamanho Total: {base64Original.Length} caracteres");
-                    //     Console.WriteLine($"Início (50 chrs): {base64Original.Substring(0, Math.Min(50, base64Original.Length))}");
-                    //     Console.WriteLine($"Fim (10 chrs): {base64Original.Substring(Math.Max(0, base64Original.Length - 10))}");
-                    //     // -------------------------------
+                    // //     // --- DEBUG: RAIO-X DO BASE64 ---
+                    // //     Console.WriteLine("\n[DEBUG-PDF] Verificando integridade do Base64...");
+                    // //     Console.WriteLine($"Tamanho Total: {base64Original.Length} caracteres");
+                    // //     Console.WriteLine($"Início (50 chrs): {base64Original.Substring(0, Math.Min(50, base64Original.Length))}");
+                    // //     Console.WriteLine($"Fim (10 chrs): {base64Original.Substring(Math.Max(0, base64Original.Length - 10))}");
+                    // //     // -------------------------------
 
-                    //     // LIMPEZA RADICAL: Remove tudo que não for caractere válido de Base64
-                    //     // (Letras, Números, +, /, =)
-                    //     string base64Limpo = new string(base64Original
-                    //         .Where(c => char.IsLetterOrDigit(c) || c == '/' || c == '+' || c == '=')
-                    //         .ToArray());
+                    // //     // LIMPEZA RADICAL: Remove tudo que não for caractere válido de Base64
+                    // //     // (Letras, Números, +, /, =)
+                    // //     string base64Limpo = new string(base64Original
+                    // //         .Where(c => char.IsLetterOrDigit(c) || c == '/' || c == '+' || c == '=')
+                    // //         .ToArray());
 
-                    //     // AJUSTE DE PADDING (O "enchimento" do Base64)
-                    //     // O tamanho da string Base64 deve ser múltiplo de 4. Se não for, o C# dá erro.
-                    //     int mod4 = base64Limpo.Length % 4;
-                    //     if (mod4 > 0)
-                    //     {
-                    //         base64Limpo += new string('=', 4 - mod4);
-                    //         Console.WriteLine($"[DEBUG-PDF] Ajustando padding: Adicionados {4 - mod4} caracteres '='");
-                    //     }
+                    // //     // AJUSTE DE PADDING (O "enchimento" do Base64)
+                    // //     // O tamanho da string Base64 deve ser múltiplo de 4. Se não for, o C# dá erro.
+                    // //     int mod4 = base64Limpo.Length % 4;
+                    // //     if (mod4 > 0)
+                    // //     {
+                    // //         base64Limpo += new string('=', 4 - mod4);
+                    // //         Console.WriteLine($"[DEBUG-PDF] Ajustando padding: Adicionados {4 - mod4} caracteres '='");
+                    // //     }
 
-                    //     try
-                    //     {
-                    //         byte[] pdfBytes = Convert.FromBase64String(base64Limpo);
-                    //         string nomeArquivo = $"Boleto_Teste_{respBoleto.Resultado.NossoNumero}.pdf";
-                    //         await File.WriteAllBytesAsync(nomeArquivo, pdfBytes);
+                    // //     try
+                    // //     {
+                    // //         byte[] pdfBytes = Convert.FromBase64String(base64Limpo);
+                    // //         string nomeArquivo = $"Boleto_Teste_{respBoleto.Resultado.NossoNumero}.pdf";
+                    // //         await File.WriteAllBytesAsync(nomeArquivo, pdfBytes);
 
-                    //         Console.WriteLine($"✅ [PDF] Sucesso! Salvo em: {nomeArquivo}");
-                    //     }
-                    //     catch (FormatException ex)
-                    //     {
-                    //         Console.WriteLine($"❌ Falha crítica no Base64 após limpeza: {ex.Message}");
-                    //         // Se falhar, vamos imprimir a string limpa para você copiar e testar num site externo
-                    //         // Console.WriteLine($"String Limpa: {base64Limpo}"); 
-                    //     }
-                    // }
+                    // //         Console.WriteLine($"✅ [PDF] Sucesso! Salvo em: {nomeArquivo}");
+                    // //     }
+                    // //     catch (FormatException ex)
+                    // //     {
+                    // //         Console.WriteLine($"❌ Falha crítica no Base64 após limpeza: {ex.Message}");
+                    // //         // Se falhar, vamos imprimir a string limpa para você copiar e testar num site externo
+                    // //         // Console.WriteLine($"String Limpa: {base64Limpo}"); 
+                    // //     }
+                    // // }
 
                     // // --- TESTE DE CONSULTA ---
                     // Console.WriteLine($"⏳ Testando CONSULTA do boleto: {nossoNumeroGerado}...");
@@ -254,6 +304,7 @@ using (var scope = app.Services.CreateScope())
                 if (respostaNfse.Erros.Any())
                     Console.WriteLine("Erros: " + string.Join(" | ", respostaNfse.Erros));
             }
+            */
         }
 
     }

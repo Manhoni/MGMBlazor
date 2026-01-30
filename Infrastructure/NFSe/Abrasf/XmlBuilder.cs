@@ -19,12 +19,12 @@ public class AbrasfXmlBuilder
     public XElement MontarConteudoRps(NotaFiscal nota)
     {
         return new XElement(Ns + "InfDeclaracaoPrestacaoServico",
-            new XAttribute("Id", "R" + (nota.Id > 0 ? nota.Id : 1)),
+            new XAttribute("Id", "R" + nota.Id),
 
             new XElement(Ns + "Rps",
                 new XElement(Ns + "IdentificacaoRps",
-                    new XElement(Ns + "Numero", nota.Id > 0 ? nota.Id : 1),
-                    new XElement(Ns + "Serie", "UNICA"),
+                    new XElement(Ns + "Numero", nota.Id),
+                    new XElement(Ns + "Serie", "1"),
                     new XElement(Ns + "Tipo", 1)
                 ),
                 new XElement(Ns + "DataEmissao", nota.DataEmissao.ToString("yyyy-MM-dd")),
@@ -122,7 +122,7 @@ public class AbrasfXmlBuilder
         return new XDocument(
             new XElement(Ns + "SubstituirNfseEnvio",
                 new XElement(Ns + "SubstituicaoNfse", new XAttribute("Id", "S" + numeroNotaSubstituir),
-                    new XElement(Ns + "PedidoCancelamento",
+                    new XElement(Ns + "Pedido",
                         new XElement(Ns + "InfPedidoCancelamento", new XAttribute("Id", "C" + numeroNotaSubstituir),
                             new XElement(Ns + "IdentificacaoNfse",
                                 new XElement(Ns + "Numero", numeroNotaSubstituir),
