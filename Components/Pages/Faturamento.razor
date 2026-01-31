@@ -40,14 +40,14 @@
                   <div class="card-header text-white" style="background-color: #76b82a;">
                         <h5 class="mb-0">2. Conferir Dados e Informar E-mail</h5>
                   </div>
-                  <div class="card-body">
+                  <div class="card-body bg-light">
                         <div class="row">
                               <div class="col-md-6 mb-3">
                                     <label class="fw-bold text-muted small">NOME DO CLIENTE</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="resumo.NomeCliente" />
+                                    <input type="text" class="form-control shadow-sm" @bind="resumo.NomeCliente" readonly />
                               </div>
                               <div class="col-md-3 mb-3">
-                                    <label class="fw-bold text-muted small">CNPJ (APENAS NÚMEROS)</label>
+                                    <label class="fw-bold text-muted small">CNPJ</label>
                                     <input type="text" class="form-control shadow-sm" value="@FormatarCnpj(resumo.CnpjCpf)"
                                           readonly />
                               </div>
@@ -57,8 +57,8 @@
                                           @bind="resumo.ValorTotal" />
                               </div>
                               <div class="col-md-6 mb-3">
-                                    <label class="fw-bold text-muted small">E-MAIL PARA ENVIO (NOTA/BOLETO)</label>
-                                    <input type="email" class="form-control shadow-sm border-primary" @bind="emailCliente"
+                                    <label class="fw-bold text-muted small">E-MAIL PARA ENVIO (NOTA/BOLETO) *</label>
+                                    <input type="email" class="form-control shadow-sm" @bind="emailCliente"
                                           placeholder="exemplo@cliente.com" />
                               </div>
                               <div class="col-md-6 mb-3">
@@ -70,6 +70,9 @@
                                                 <option value="@s.Id">@s.CodigoMunicipal - @s.Descricao</option>
                                           }
                                     </select>
+                              </div>
+                              <div class="col-md-3 mb-3">
+                                    <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
                               </div>
                         </div>
 
@@ -85,7 +88,7 @@
                                     }
                                     else
                                     {
-                                          <span>🚀 EMITIR NOTA FISCAL AGORA</span>
+                                          <span>EMITIR NOTA FISCAL</span>
                                     }
                               </button>
                         </div>
@@ -110,42 +113,45 @@
       @if (notaGeradaComSucesso)
       {
             <!-- 3. CONFIGURAÇÃO DO BOLETO (Só aparece após a nota) -->
-            <div class="card shadow-lg border-info mb-4">
-                  <div class="card-header bg-info text-white d-flex justify-content-between">
+            <div class="card shadow-lg border-0 mb-4">
+                  <div class="card-header text-white d-flex justify-content-between" style="background-color: #76b82a;">
                         <h5 class="mb-0">✅ Nota @respostaNfse?.NumeroNota Emitida! Agora configure o Boleto:</h5>
-                        <a href="@linkNota" target="_blank" class="btn btn-sm btn-light">👁️ Ver PDF da Nota</a>
+                        <a href="@linkNota" target="_blank" class="btn btn-sm btn-light"> PDF da Nota Fiscal</a>
                   </div>
                   <div class="card-body bg-light">
                         <div class="row">
                               <div class="col-md-3 mb-3">
                                     <label class="fw-bold small">VENCIMENTO</label>
-                                    <input type="date" class="form-control border-info" @bind="dataVencimentoBoleto" />
+                                    <input type="date" class="form-control shadow-sm" @bind="dataVencimentoBoleto" />
                               </div>
                               <div class="col-md-2 mb-3">
                                     <label class="fw-bold small">PARCELA</label>
-                                    <input type="number" class="form-control" @bind="numeroParcela" />
+                                    <input type="number" class="form-control shadow-sm" @bind="numeroParcela" />
                               </div>
                               <div class="col-md-2 mb-3">
                                     <label class="fw-bold small">SEU NUMERO</label>
-                                    <input type="text" class="form-control" @bind="seuNumero" />
+                                    <input type="text" class="form-control shadow-sm" @bind="seuNumero" />
                               </div>
                               <div class="col-md-7 mb-3">
-                                    <label class="fw-bold small">ENDEREÇO DO PAGADOR (Obrigatório p/ Sicoob)</label>
-                                    <input type="text" class="form-control border-info" @bind="enderecoBoleto"
+                                    <label class="fw-bold small">ENDEREÇO DO PAGADOR *</label>
+                                    <input type="text" class="form-control shadow-sm" @bind="enderecoBoleto"
                                           placeholder="Rua, Número, Bairro" />
                               </div>
                               <div class="col-md-4 mb-3">
                                     <label class="fw-bold small">CIDADE</label>
-                                    <input type="text" class="form-control" @bind="cidadeBoleto" />
+                                    <input type="text" class="form-control shadow-sm" @bind="cidadeBoleto" />
                               </div>
                               <div class="col-md-2 mb-3">
                                     <label class="fw-bold small">UF</label>
-                                    <input type="text" class="form-control" @bind="ufBoleto" maxlength="2" />
+                                    <input type="text" class="form-control shadow-sm" @bind="ufBoleto" maxlength="2" />
                               </div>
                               <div class="col-md-3 mb-3">
                                     <label class="fw-bold small">CEP</label>
-                                    <input type="text" class="form-control" @bind="cepBoleto" />
+                                    <input type="text" class="form-control shadow-sm" @bind="cepBoleto" />
                               </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                              <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
                         </div>
 
                         <div class="alert alert-warning py-2 small">
@@ -300,10 +306,22 @@
 
                   var resp = await SicoobService.IncluirBoletoAsync(respostaNfse.IdInternoNoBanco, boletoReq);
 
+                  Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp.Resultado.PdfBoleto)}");
+                  Console.WriteLine($"[DEBUG-FRONT] Tamanho do PDF: {resp.Resultado.PdfBoleto?.Length ?? 0}");
+
                   if (resp?.Resultado?.PdfBoleto != null)
                   {
                         boletoGerado = true;
-                        await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+                        if (resp.Resultado.PdfBoleto.Length > 200)
+                        {
+                              Console.WriteLine("[INFO] PDF válido recebido. Abrindo...");
+                              await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+                        }
+                        else
+                        {
+                              Console.WriteLine($"[AVISO] Sandbox enviou PDF incompleto ({resp.Resultado.PdfBoleto.Length} chars).");
+                              statusTeste = "⚠️ Nota gerada, mas o Sandbox do banco não enviou um PDF válido para visualização.";
+                        }
                   }
             }
             catch (Exception ex)

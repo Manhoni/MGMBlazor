@@ -140,6 +140,8 @@ public class SicoobService : ISicoobService
                 dataVenc = dtParsed.ToUniversalTime(); // Postgres prefere UTC
             }
 
+            var pdfFinal = boletoGerado.Resultado.PdfBoleto; // somente para salvar no banco uma vez para mandar no suporte API Sicoob
+            /*
             string? pdfFinal = null;
             if (!string.IsNullOrEmpty(boletoGerado.Resultado.PdfBoleto))
             {
@@ -149,6 +151,7 @@ public class SicoobService : ISicoobService
                 // Verificação de integridade mínima para Produção
                 if (pdfFinal.Length % 4 != 0) pdfFinal = null;
             }
+            */
 
             // SALVANDO NO BANCO DE DADOS
             var novaCobranca = new Cobranca
