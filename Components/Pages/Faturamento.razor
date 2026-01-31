@@ -1,0 +1,322 @@
+@page "/"
+@rendermode InteractiveServer
+@inject INfseService NfseService
+@inject ISicoobService SicoobService
+@inject FaturaImportService ImportService
+@inject AppDbContext DbContext
+@inject IJSRuntime JS
+@inject IConfiguration config
+
+<div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+      <!-- Header MGM -->
+      <div class="d-flex align-items-center mb-4 p-3 shadow-sm rounded"
+            style="background-color: #ffffff; border-left: 8px solid #76b82a;">
+            <img src="mgmLogo.jpg" height="60" class="me-3" />
+            <div>
+                  <h2 style="color: #333; margin: 0; font-weight: bold;">MGM - Gestão de Faturamento</h2>
+                  <small class="text-muted">Medicina e Segurança do Trabalho</small>
+            </div>
+      </div>
+
+      <!-- Status de Debug (Opcional, pode remover depois) -->
+      <div class="alert @(statusTeste.Contains("Erro") ? "alert-danger" : "alert-light") border shadow-sm mb-3">
+            <strong>Status:</strong> @statusTeste
+      </div>
+
+      <!-- 1. IMPORTAÇÃO -->
+      <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header text-white" style="background-color: #2e2e2e;">
+                  <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> 1. Importar Fatura (CSV)</h5>
+            </div>
+            <div class="card-body bg-light">
+                  <InputFile OnChange="HandleFileSelected" class="form-control border-success" />
+            </div>
+      </div>
+
+      @if (resumo != null)
+      {
+            <!-- 2. CONFERÊNCIA -->
+            <div class="card shadow mb-4 border-0">
+                  <div class="card-header text-white" style="background-color: #76b82a;">
+                        <h5 class="mb-0">2. Conferir Dados e Informar E-mail</h5>
+                  </div>
+                  <div class="card-body">
+                        <div class="row">
+                              <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">NOME DO CLIENTE</label>
+                                    <input type="text" class="form-control shadow-sm" @bind="resumo.NomeCliente" />
+                              </div>
+                              <div class="col-md-3 mb-3">
+                                    <label class="fw-bold text-muted small">CNPJ (APENAS NÚMEROS)</label>
+                                    <input type="text" class="form-control shadow-sm" value="@FormatarCnpj(resumo.CnpjCpf)"
+                                          readonly />
+                              </div>
+                              <div class="col-md-3 mb-3">
+                                    <label class="fw-bold text-muted small">VALOR TOTAL (R$)</label>
+                                    <input type="number" step="0.01" class="form-control fw-bold text-success shadow-sm"
+                                          @bind="resumo.ValorTotal" />
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">E-MAIL PARA ENVIO (NOTA/BOLETO)</label>
+                                    <input type="email" class="form-control shadow-sm border-primary" @bind="emailCliente"
+                                          placeholder="exemplo@cliente.com" />
+                              </div>
+                              <div class="col-md-6 mb-3">
+                                    <label class="fw-bold text-muted small">SERVIÇO PRESTADO</label>
+                                    <select class="form-select shadow-sm" @bind="servicoSelecionadoId">
+                                          <option value="0">-- Selecione o Serviço --</option>
+                                          @foreach (var s in servicos)
+                                          {
+                                                <option value="@s.Id">@s.CodigoMunicipal - @s.Descricao</option>
+                                          }
+                                    </select>
+                              </div>
+                        </div>
+
+                        <div class="mt-4">
+                              <button class="btn btn-lg text-white w-100 shadow"
+                                    style="background-color: #2e2e2e; border-bottom: 4px solid #76b82a;"
+                                    @onclick="GerarFaturamento" disabled="@processando">
+                                    @if (processando)
+                                    {
+                                          <span class="spinner-border spinner-border-sm"></span>
+                                          <span>
+                                                PROCESSANDO...</span>
+                                    }
+                                    else
+                                    {
+                                          <span>🚀 EMITIR NOTA FISCAL AGORA</span>
+                                    }
+                              </button>
+                        </div>
+                  </div>
+            </div>
+      }
+
+      <!-- EXIBIÇÃO DE ERROS DA PREFEITURA -->
+      @if (respostaNfse != null && !respostaNfse.Sucesso)
+      {
+            <div class="alert alert-danger shadow">
+                  <h5>❌ Erro no Processamento:</h5>
+                  <ul>
+                        @foreach (var erro in respostaNfse.Erros)
+                        {
+                              <li>@erro</li>
+                        }
+                  </ul>
+            </div>
+      }
+
+      @if (notaGeradaComSucesso)
+      {
+            <!-- 3. CONFIGURAÇÃO DO BOLETO (Só aparece após a nota) -->
+            <div class="card shadow-lg border-info mb-4">
+                  <div class="card-header bg-info text-white d-flex justify-content-between">
+                        <h5 class="mb-0">✅ Nota @respostaNfse?.NumeroNota Emitida! Agora configure o Boleto:</h5>
+                        <a href="@linkNota" target="_blank" class="btn btn-sm btn-light">👁️ Ver PDF da Nota</a>
+                  </div>
+                  <div class="card-body bg-light">
+                        <div class="row">
+                              <div class="col-md-3 mb-3">
+                                    <label class="fw-bold small">VENCIMENTO</label>
+                                    <input type="date" class="form-control border-info" @bind="dataVencimentoBoleto" />
+                              </div>
+                              <div class="col-md-2 mb-3">
+                                    <label class="fw-bold small">PARCELA</label>
+                                    <input type="number" class="form-control" @bind="numeroParcela" />
+                              </div>
+                              <div class="col-md-2 mb-3">
+                                    <label class="fw-bold small">SEU NUMERO</label>
+                                    <input type="text" class="form-control" @bind="seuNumero" />
+                              </div>
+                              <div class="col-md-7 mb-3">
+                                    <label class="fw-bold small">ENDEREÇO DO PAGADOR (Obrigatório p/ Sicoob)</label>
+                                    <input type="text" class="form-control border-info" @bind="enderecoBoleto"
+                                          placeholder="Rua, Número, Bairro" />
+                              </div>
+                              <div class="col-md-4 mb-3">
+                                    <label class="fw-bold small">CIDADE</label>
+                                    <input type="text" class="form-control" @bind="cidadeBoleto" />
+                              </div>
+                              <div class="col-md-2 mb-3">
+                                    <label class="fw-bold small">UF</label>
+                                    <input type="text" class="form-control" @bind="ufBoleto" maxlength="2" />
+                              </div>
+                              <div class="col-md-3 mb-3">
+                                    <label class="fw-bold small">CEP</label>
+                                    <input type="text" class="form-control" @bind="cepBoleto" />
+                              </div>
+                        </div>
+
+                        <div class="alert alert-warning py-2 small">
+                              O Sicoob exige endereço completo para registrar o boleto.
+                        </div>
+
+                        <button class="btn btn-success btn-lg w-100" @onclick="GerarBoletoAgora" disabled="@processando">
+                              💰 GERAR E REGISTRAR BOLETO NO SICOOB
+                        </button>
+                  </div>
+            </div>
+      }
+</div>
+
+@code {
+      private FaturaResumo? resumo;
+      private List<Servico> servicos = new();
+      private int servicoSelecionadoId;
+      private string emailCliente = "";
+      private bool processando = false;
+      private bool notaGeradaComSucesso = false;
+      private bool boletoGerado = false;
+      private RespostaEmissao? respostaNfse;
+      private string? linkNota;
+      private DateTime dataVencimentoBoleto = DateTime.Today.AddDays(7);
+      private int numeroParcela = 1;
+      private string seuNumero = "";
+      private string enderecoBoleto = "";
+      private string cidadeBoleto = "Maringa";
+      private string ufBoleto = "PR";
+      private string cepBoleto = "";
+      private string statusTeste = "Aguardando importação de CSV...";
+
+      protected override async Task OnInitializedAsync()
+      {
+            servicos = await DbContext.Servicos.ToListAsync();
+      }
+
+      private async Task HandleFileSelected(InputFileChangeEventArgs e)
+      {
+            try
+            {
+                  using var stream = e.File.OpenReadStream();
+                  using var ms = new MemoryStream();
+                  await stream.CopyToAsync(ms);
+                  ms.Position = 0;
+                  resumo = ImportService.ProcessarCsv(ms);
+                  statusTeste = "✅ Fatura importada com sucesso!";
+            }
+            catch (Exception ex)
+            {
+                  statusTeste = "❌ Erro ao ler CSV: " + ex.Message;
+            }
+      }
+
+      private async Task GerarFaturamento()
+      {
+            if (resumo == null || servicoSelecionadoId == 0)
+            {
+                  statusTeste = "⚠️ Selecione o serviço antes de continuar.";
+                  return;
+            }
+
+            processando = true;
+            notaGeradaComSucesso = false;
+            respostaNfse = null;
+
+            try
+            {
+                  // 1. CONSULTA DE SEGURANÇA (O que você pediu)
+                  int rpsCandidato = await NfseService.ObterProximoNumeroRpsAsync();
+                  statusTeste = $"Consultando se RPS {rpsCandidato} está livre...";
+
+                  var consulta = await NfseService.VerificarSeRpsJaExisteNaPrefeitura(rpsCandidato);
+
+                  if (consulta.Sucesso)
+                  {
+                        statusTeste = $"⚠️ O RPS {rpsCandidato} já foi usado (Nota {consulta.NumeroNota}). O banco foi sincronizado. Tente gerar novamente.";
+                        processando = false;
+                        return;
+                  }
+
+                  // 2. EMISSÃO REAL
+                  statusTeste = $"Emitindo Nota Fiscal para RPS {rpsCandidato}...";
+                  var servico = servicos.First(s => s.Id == servicoSelecionadoId);
+
+                  var nota = new NotaFiscal
+                  {
+                        Id = rpsCandidato,
+                        Valor = resumo.ValorTotal,
+                        Tomador = new Cliente
+                        {
+                              RazaoSocial = resumo.NomeCliente,
+                              Cnpj = resumo.CnpjCpf,
+                              Email = emailCliente,
+                              MunicipioCodigoIbge = "4115200"
+                        },
+                        Servico = servico
+                  };
+
+                  respostaNfse = await NfseService.EmitirNotaAsync(nota);
+
+                  if (respostaNfse.Sucesso)
+                  {
+                        linkNota = NfseService.GerarLinkConsultaPublica(respostaNfse.NumeroNota!, respostaNfse.CodigoVerificacao!);
+                        notaGeradaComSucesso = true;
+                        statusTeste = "✅ Processo concluído!";
+                  }
+                  else
+                  {
+                        statusTeste = "❌ A prefeitura recusou a nota. Verifique os erros abaixo.";
+                  }
+            }
+            catch (Exception ex)
+            {
+                  statusTeste = "💥 Erro crítico: " + ex.Message;
+            }
+            finally { processando = false; }
+      }
+
+      private async Task GerarBoletoAgora()
+      {
+            if (string.IsNullOrEmpty(enderecoBoleto) || string.IsNullOrEmpty(cepBoleto))
+            {
+                  statusTeste = "❌ Preencha o endereço e CEP para o boleto.";
+                  return;
+            }
+
+            processando = true;
+            try
+            {
+                  var usarSandbox = config.GetValue<bool>("SicoobConfig:UsarSandbox");
+                  var boletoReq = new BoletoRequest
+                  {
+                        NumeroCliente = usarSandbox ? 25546454 : config.GetValue<long>("SicoobConfig:NumeroCliente"),
+                        NumeroContaCorrente = usarSandbox ? 0 : config.GetValue<long>("SicoobConfig:NumeroContaCorrente"),
+                        Valor = resumo!.ValorTotal,
+                        NumeroParcela = numeroParcela,
+                        SeuNumero = "MGM-" + seuNumero,
+                        DataVencimento = "2018-09-20", //.ToString("yyyy-MM-ddT00:00:00-03:00"),
+                        Pagador = new PagadorRequest
+                        {
+                              Nome = resumo.NomeCliente,
+                              NumeroCpfCnpj = resumo.CnpjCpf,
+                              Endereco = enderecoBoleto,
+                              Cidade = cidadeBoleto,
+                              Cep = cepBoleto,
+                              Uf = ufBoleto
+                        },
+                        GerarPdf = true
+                  };
+
+                  var resp = await SicoobService.IncluirBoletoAsync(respostaNfse.IdInternoNoBanco, boletoReq);
+
+                  if (resp?.Resultado?.PdfBoleto != null)
+                  {
+                        boletoGerado = true;
+                        await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+                  }
+            }
+            catch (Exception ex)
+            {
+                  statusTeste = "❌ Falha no Boleto: " + ex.Message;
+            }
+            finally { processando = false; }
+      }
+      private string FormatarCnpj(string cnpj)
+      {
+            if (string.IsNullOrWhiteSpace(cnpj)) return "";
+            var numeros = new string(cnpj.Where(char.IsDigit).ToArray());
+            if (numeros.Length != 14) return cnpj;
+            return Convert.ToUInt64(numeros).ToString(@"00\.000\.000\/0000\-00");
+      }
+}

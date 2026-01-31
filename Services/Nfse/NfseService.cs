@@ -6,6 +6,8 @@ using MGMBlazor.Infrastructure.NFSe.Soap;
 using MGMBlazor.Infrastructure.NFSe.Abrasf.Parsing;
 using MGMBlazor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using MGMBlazor.Infrastructure.NFSe.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace MGMBlazor.Services.Nfse;
 
@@ -20,6 +22,7 @@ public class NfseService : INfseService
     private readonly FintelSoapClient _soapClient; // Injetado ou criado aqui
     private readonly string _pastaSchemas;
     private readonly INfseRetornoParser _retornoParser;
+    private readonly NfseOptions _config;
 
     public NfseService(
         AppDbContext context,
@@ -29,7 +32,8 @@ public class NfseService : INfseService
         ICertificateProvider certificateProvider,
         HttpClient httpClient,
         FintelSoapClient soapClient,
-        INfseRetornoParser retornoParser)
+        INfseRetornoParser retornoParser,
+        IOptions<NfseOptions> config)
     {
         _context = context;
         _builder = builder;
@@ -39,6 +43,7 @@ public class NfseService : INfseService
         _httpCliente = httpClient;
         _soapClient = soapClient;
         _retornoParser = retornoParser;
+        _config = config.Value;
 
         // Define a pasta uma única vez no construtor
         _pastaSchemas = Path.Combine(AppContext.BaseDirectory, "Infrastructure", "NFSe", "Abrasf", "Schemas");
@@ -52,6 +57,15 @@ public class NfseService : INfseService
 
         return ultimoRPS + 1;
     }
+
+    public string GerarLinkConsultaPublica(string numeroNota, string codigoVerificacao)
+    {
+        var cnpjPrestador = _config.Prestador.Cnpj;
+        // URL padrão de consulta de Maringá (ajuste se o manual indicar outra)
+        //return $"https://nfse-ws.ecity.maringa.pr.gov.br/v2.01/nfse.aspx?cc={codigoVerificacao}&num={numeroNota}&cnpj={cnpjPrestador}";
+        return $"https://visualizar-nfse.ecity.maringa.pr.gov.br/?cnpj={cnpjPrestador}&num={numeroNota}&cod={codigoVerificacao}";
+    }
+
     public async Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero)
     {
         Console.WriteLine($"[CONSULTA] Verificando RPS {rpsNumero}...");

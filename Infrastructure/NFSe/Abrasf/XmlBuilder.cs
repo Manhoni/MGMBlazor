@@ -35,7 +35,7 @@ public class AbrasfXmlBuilder
 
             new XElement(Ns + "Servico",
                 new XElement(Ns + "Valores",
-                    new XElement(Ns + "ValorServicos", nota.Servico.Valor.ToString("F2", CultureInfo.InvariantCulture))
+                    new XElement(Ns + "ValorServicos", nota.Valor.ToString("F2", CultureInfo.InvariantCulture))
 
                 ),
                 new XElement(Ns + "IssRetido", 2),

@@ -11,5 +11,6 @@ public interface INfseService
     Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero);
     Task<RespostaEmissao> SubstituirNotaAsync(string numeroNotaExistente, NotaFiscal novaNota);
     Task<RespostaEmissao> CancelarNotaAsync(string numeroNota, string codigoMotivo);
+    string GerarLinkConsultaPublica(string numeroNota, string codigoVerificacao);
 }
 

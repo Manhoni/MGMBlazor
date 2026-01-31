@@ -13,31 +13,32 @@ public class FaturaImportService
         {
             HasHeaderRecord = true,
             Delimiter = ",",
+            MissingFieldFound = null,
         };
 
         using var reader = new StreamReader(fileStream);
         using var csv = new CsvReader(reader, config);
-        
+
         var registros = csv.GetRecords<FaturaCsvItem>().ToList();
 
         // 1. Pegamos os dados do cliente (da primeira linha que tiver documento)
-        var primeiraLinhaValida = registros.FirstOrDefault(r => r.Documento != "-");
-        
+        var primeiraLinhaValida = registros.FirstOrDefault(r => !string.IsNullOrEmpty(r.Documento) && r.Documento != "-");
+
         if (primeiraLinhaValida == null) throw new Exception("CSV Inválido");
 
         // 2. Limpamos o CNPJ para o formato que a NFSe e o Sicoob gostam (só números)
         string cnpjLimpo = new string(primeiraLinhaValida.Documento.Where(char.IsDigit).ToArray());
 
         // 3. Pegamos o valor Total (geralmente está na última linha do seu CSV)
-        decimal valorTotal = registros.FirstOrDefault(r => r.Exame == "Total")?.Valor 
-                            ?? registros.Where(r => r.Exame != "Total").Sum(r => r.Valor);
+        var linhaTotal = registros.FirstOrDefault(r => r.Exame == "Total");
+        decimal valorTotal = linhaTotal?.Valor ?? registros.Sum(r => r.Valor);
 
         return new FaturaResumo
         {
             NomeCliente = primeiraLinhaValida.Cliente,
             CnpjCpf = cnpjLimpo,
-            ValorTotal = valorTotal,
-            QuantidadeItens = registros.Count - 2 // Descontando as linhas de Total/Desconto
+            ValorTotal = valorTotal
+            //QuantidadeItens = registros.Count - 2 // Descontando as linhas de Total/Desconto
         };
     }
 }
@@ -47,5 +48,5 @@ public class FaturaResumo
     public string NomeCliente { get; set; } = string.Empty;
     public string CnpjCpf { get; set; } = string.Empty;
     public decimal ValorTotal { get; set; }
-    public int QuantidadeItens { get; set; }
+    //public int QuantidadeItens { get; set; }
 }

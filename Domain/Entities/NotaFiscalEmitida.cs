@@ -15,6 +15,7 @@ public class NotaFiscalEmitida
 
     // Onde guardaremos o documento legal
     public string XmlRetorno { get; set; } = string.Empty;
+    public string? LinkPdf { get; set; }
 
     public StatusNfse Status { get; set; } = StatusNfse.Pendente;
 }
