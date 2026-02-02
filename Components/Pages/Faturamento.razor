@@ -1,4 +1,4 @@
-@page "/"
+@page "/faturamento"
 @rendermode InteractiveServer
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
@@ -52,9 +52,12 @@
                                           readonly />
                               </div>
                               <div class="col-md-3 mb-3">
-                                    <label class="fw-bold text-muted small">VALOR TOTAL (R$)</label>
-                                    <input type="number" step="0.01" class="form-control fw-bold text-success shadow-sm"
-                                          @bind="resumo.ValorTotal" />
+                                    <label class="fw-bold text-muted small">VALOR TOTAL</label>
+                                    <div class="input-group">
+                                          <span class="input-group-text shadow-sm">R$</span>
+                                          <input type="text" class="form-control fw-bold text-success shadow-sm"
+                                                @bind="ValorExibicao" />
+                                    </div>
                               </div>
                               <div class="col-md-6 mb-3">
                                     <label class="fw-bold text-muted small">E-MAIL PARA ENVIO (NOTA/BOLETO) *</label>
@@ -62,7 +65,7 @@
                                           placeholder="exemplo@cliente.com" />
                               </div>
                               <div class="col-md-6 mb-3">
-                                    <label class="fw-bold text-muted small">SERVIÇO PRESTADO</label>
+                                    <label class="fw-bold text-muted small">SERVIÇO PRESTADO *</label>
                                     <select class="form-select shadow-sm" @bind="servicoSelecionadoId">
                                           <option value="0">-- Selecione o Serviço --</option>
                                           @foreach (var s in servicos)
@@ -159,7 +162,7 @@
                         </div>
 
                         <button class="btn btn-success btn-lg w-100" @onclick="GerarBoletoAgora" disabled="@processando">
-                              💰 GERAR E REGISTRAR BOLETO NO SICOOB
+                              GERAR E REGISTRAR BOLETO NO SICOOB
                         </button>
                   </div>
             </div>
@@ -336,5 +339,17 @@
             var numeros = new string(cnpj.Where(char.IsDigit).ToArray());
             if (numeros.Length != 14) return cnpj;
             return Convert.ToUInt64(numeros).ToString(@"00\.000\.000\/0000\-00");
+      }
+      // Propriedade que a tela enxerga
+      private string ValorExibicao
+      {
+            get => resumo?.ValorTotal.ToString("N2") ?? "0,00";
+            set
+            {
+                  if (decimal.TryParse(value, out var novoValor))
+                  {
+                        resumo!.ValorTotal = novoValor;
+                  }
+            }
       }
 }

@@ -1,0 +1,95 @@
+@page "/"
+@using MGMBlazor.Infrastructure.Security
+@rendermode InteractiveServer
+
+@layout Layout.EmptyLayout
+@inject NavigationManager Nav
+@inject AppDbContext DbContext
+
+<div class="d-flex justify-content-center align-items-center vh-100" style="background-color: #f4f4f4;">
+      <div class="card shadow-lg p-4" style="width: 400px; border-top: 5px solid #76b82a;">
+            <div class="text-center mb-4">
+                  <img src="mgmLogo.jpg" height="80" />
+                  <h4 class="mt-2 fw-bold">Acesso ao Sistema</h4>
+            </div>
+
+            <div class="mb-3">
+                  <label class="form-label">Usuário</label>
+                  <input type="text" class="form-control" @bind="usuario" autofocus />
+            </div>
+
+            <div class="mb-3">
+                  <label class="form-label">Senha</label>
+                  <input type="password" class="form-control" @bind="senha" @onkeydown="TratarEnter" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(erro))
+            {
+                  <div class="alert alert-danger py-2 small">@erro</div>
+            }
+
+            <button type="button" class="btn btn-dark w-100 py-2 shadow-sm btn-login"
+                  style="background-color: #2e2e2e; border-bottom: 4px solid #76b82a;" @onclick="TentarLogar"
+                  disabled="@processando">
+
+                  @if (processando)
+                  {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="ms-2">AUTENTICANDO...</span>
+                  }
+                  else
+                  {
+                        <span>ENTRAR</span>
+                  }
+            </button>
+      </div>
+</div>
+<style>
+      /* Efeito visual de clique */
+      .btn-login:active {
+            transform: translateY(2px);
+            /* Faz o botão "descer" 2 pixels */
+            box-shadow: none !important;
+            /* Remove a sombra pra parecer que encostou no fundo */
+      }
+
+      /* Transição suave para a animação não ser brusca */
+      .btn-login {
+            transition: all 0.1s ease-in-out;
+      }
+</style>
+
+@code {
+      private string usuario = "";
+      private string senha = "";
+      private string erro = "";
+      private bool processando = false;
+
+      private async Task TentarLogar()
+      {
+            processando = true;
+            Console.WriteLine("[DEBUG]>>>> BOTÃO DE LOGIN CLICADO!");
+            string senhaDigitadaHash = PasswordHasher.GerarHash(senha);
+
+            var userDb = await DbContext.Usuarios
+            .FirstOrDefaultAsync(u => u.Login == usuario && u.SenhaHash == senhaDigitadaHash);
+
+            if (userDb != null)
+            {
+                  Nav.NavigateTo("/faturamento");
+                  processando = false;
+            }
+            else
+            {
+                  erro = "Usuário ou senha inválidos.";
+                  processando = false;
+            }
+      }
+      private async Task TratarEnter(KeyboardEventArgs e)
+      {
+            if (e.Code == "Enter" || e.Code == "NumpadEnter")
+            {
+                  await TentarLogar();
+            }
+      }
+}

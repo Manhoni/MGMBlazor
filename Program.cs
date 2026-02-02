@@ -368,6 +368,11 @@ builder.Services.AddScoped<FaturaImportService>(); // Novo serviço de CSV
 builder.Services.AddHttpClient<INfseService, NfseService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHttpClient<ISicoobService, SicoobService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 
+// Configura a cultura padrão para Português do Brasil
+var cultureInfo = new System.Globalization.CultureInfo("pt-BR");
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
 var app = builder.Build();
 
 // --- 4. PIPELINE HTTP ---

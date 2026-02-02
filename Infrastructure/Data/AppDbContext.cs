@@ -13,11 +13,12 @@ public class AppDbContext : DbContext
     // Se você quiser salvar os detalhes dos serviços e da nota bruta, adicione-os aqui:
     public DbSet<Servico> Servicos { get; set; }
     public DbSet<Cobranca> Cobrancas { get; set; }
+    public DbSet<Usuario> Usuarios { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        
+
         // Exemplo: Garante que não existam duas notas com o mesmo número no banco
         modelBuilder.Entity<NotaFiscalEmitida>()
             .HasIndex(n => n.NumeroNota)
