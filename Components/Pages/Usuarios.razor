@@ -1,4 +1,5 @@
 @page "/usuarios"
+@attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
 @using MGMBlazor.Domain.Entities
 @using MGMBlazor.Infrastructure.Security
@@ -18,37 +19,30 @@
             </button>
       </div>
 
-      @if (UserSession.Role != "Admin")
-      {
-            <div class="alert alert-danger">Acesso restrito ao administrador.</div>
-      }
-      else
-      {
-            <table class="table table-hover shadow-sm bg-white rounded">
-                  <thead class="table-dark">
+      <table class="table table-hover shadow-sm bg-white rounded">
+            <thead class="table-dark">
+                  <tr>
+                        <th>Nome</th>
+                        <th>Login</th>
+                        <th>Perfil (Role)</th>
+                        <th>Ações</th>
+                  </tr>
+            </thead>
+            <tbody>
+                  @foreach (var user in listaUsuarios)
+                  {
                         <tr>
-                              <th>Nome</th>
-                              <th>Login</th>
-                              <th>Perfil (Role)</th>
-                              <th>Ações</th>
+                              <td>@user.Nome</td>
+                              <td>@user.Login</td>
+                              <td><span class="badge bg-secondary">@user.Role</span></td>
+                              <td>
+                                    <button class="btn btn-sm btn-outline-danger"
+                                          @onclick="() => DeletarUsuario(user.Id)">Excluir</button>
+                              </td>
                         </tr>
-                  </thead>
-                  <tbody>
-                        @foreach (var user in listaUsuarios)
-                        {
-                              <tr>
-                                    <td>@user.Nome</td>
-                                    <td>@user.Login</td>
-                                    <td><span class="badge bg-secondary">@user.Role</span></td>
-                                    <td>
-                                          <button class="btn btn-sm btn-outline-danger"
-                                                @onclick="() => DeletarUsuario(user.Id)">Excluir</button>
-                                    </td>
-                              </tr>
-                        }
-                  </tbody>
-            </table>
-      }
+                  }
+            </tbody>
+      </table>
 </div>
 
 @if (mostrarModal)

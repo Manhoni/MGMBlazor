@@ -330,6 +330,8 @@ using MGMBlazor.Services.Nfse;
 using MGMBlazor.Services.Sicoob;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.InteropServices;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -365,7 +367,10 @@ builder.Services.AddScoped<XmlSigner>();
 builder.Services.AddScoped<INfseRetornoParser, AbrasfRetornoParser>();
 builder.Services.AddScoped<FintelSoapClient>();
 builder.Services.AddScoped<FaturaImportService>(); // Novo serviço de CSV
-builder.Services.AddScoped<UserSession>();
+builder.Services.AddAuthenticationCore();
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<ProtectedLocalStorage>();
+builder.Services.AddScoped<AuthenticationStateProvider, MGMAuthStateProvider>();
 
 builder.Services.AddHttpClient<INfseService, NfseService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHttpClient<ISicoobService, SicoobService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));

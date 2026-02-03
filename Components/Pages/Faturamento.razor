@@ -1,4 +1,5 @@
 @page "/faturamento"
+@attribute [Authorize(Roles = "Admin,Fiscal")]
 @rendermode InteractiveServer
 @using MGMBlazor.Services.Import
 @using MGMBlazor.Infrastructure.Security
@@ -10,22 +11,6 @@
 @inject AppDbContext DbContext
 @inject IJSRuntime JS
 @inject IConfiguration config
-
-@code {
-      protected override void OnInitialized()
-      {
-            if (!UserSession.IsLoggedIn)
-            {
-                  // Expulsa o intruso para a tela de login
-                  Nav.NavigateTo("/");
-            }
-            else if (!UserSession.IsAdmin && UserSession.Role != "Fiscal")
-            {
-                  // Usuário logado, mas sem permissão para acessar esta página
-                  Nav.NavigateTo("/home");
-            }
-      }
-}
 
 <div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <!-- Header MGM -->
@@ -180,11 +165,25 @@
                         <div class="alert alert-warning py-2 small">
                               O Sicoob exige endereço completo para registrar o boleto.
                         </div>
-
-                        <button class="btn btn-success btn-lg w-100" @onclick="GerarBoletoAgora" disabled="@processando">
-                              GERAR E REGISTRAR BOLETO NO SICOOB
-                        </button>
+                        @if (!boletoGerado)
+                        {
+                              <button class="btn btn-success btn-lg w-100" @onclick="GerarBoletoAgora" disabled="@processando">
+                                    GERAR E REGISTRAR BOLETO NO SICOOB
+                              </button>
+                        }
+                        else
+                        {
+                              <div class="alert alert-success text-center fw-bold">
+                                    ✅ Boleto vinculado com sucesso!
+                              </div>
+                        }
                   </div>
+            </div>
+      }
+      @if (boletoGerado)
+      {
+            <div class="alert alert-success mt-2 py-1 shadow-sm">
+                  <i class="bi bi-check-circle-fill"></i> Boleto registrado e pronto para visualização!
             </div>
       }
 </div>
@@ -314,7 +313,7 @@
                         Valor = resumo!.ValorTotal,
                         NumeroParcela = numeroParcela,
                         SeuNumero = "MGM-" + seuNumero,
-                        DataVencimento = "2018-09-20", //.ToString("yyyy-MM-ddT00:00:00-03:00"),
+                        DataVencimento = usarSandbox ? "2018-09-20" : dataVencimentoBoleto.ToString("yyyy-MM-ddT00:00:00-03:00"),
                         Pagador = new PagadorRequest
                         {
                               Nome = resumo.NomeCliente,
@@ -327,10 +326,10 @@
                         GerarPdf = true
                   };
 
-                  var resp = await SicoobService.IncluirBoletoAsync(respostaNfse.IdInternoNoBanco, boletoReq);
+                  var resp = await SicoobService.IncluirBoletoAsync(respostaNfse!.IdInternoNoBanco, boletoReq);
 
-                  Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp.Resultado.PdfBoleto)}");
-                  Console.WriteLine($"[DEBUG-FRONT] Tamanho do PDF: {resp.Resultado.PdfBoleto?.Length ?? 0}");
+                  Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto)}");
+                  Console.WriteLine($"[DEBUG-FRONT] Tamanho do PDF: {resp?.Resultado?.PdfBoleto?.Length ?? 0}");
 
                   if (resp?.Resultado?.PdfBoleto != null)
                   {
@@ -339,6 +338,7 @@
                         {
                               Console.WriteLine("[INFO] PDF válido recebido. Abrindo...");
                               await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+                              statusTeste = "✅ Boleto gerado e registrado com sucesso!";
                         }
                         else
                         {

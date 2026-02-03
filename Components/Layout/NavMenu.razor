@@ -1,5 +1,6 @@
 ﻿@using MGMBlazor.Infrastructure.Security
 @inject UserSession UserSession
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Nav
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -12,61 +13,62 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        @if (UserSession.IsLoggedIn)
-        {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
-                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-                </NavLink>
-            </div>
-
-            <!-- Somente Admin e Fiscal veem Faturamento -->
-            @if (UserSession.IsAdmin || UserSession.Role == "Fiscal")
-            {
+        <AuthorizeView>
+            <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="faturamento">
-                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Faturamento
+                    <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
                     </NavLink>
                 </div>
-            }
+                <AuthorizeView Roles="Admin,Fiscal" Context="roleContext">
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="faturamento">
+                            <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Faturamento
+                        </NavLink>
+                    </div>
+                </AuthorizeView>
 
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="notas">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Notas Fiscais
-                </NavLink>
-            </div>
+                @if (context.User.IsInRole("Admin"))
+                {
+                    <div class="nav-item px-3">
+                        <NavLink class="nav-link" href="usuarios">
+                            <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Gerenciar Usuários
+                        </NavLink>
+                    </div>
+                }
+            </Authorized>
+        </AuthorizeView>
 
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="boletos">
-                    <span class="bi bi-cash-stack-nav-menu" aria-hidden="true"></span> Boletos
-                </NavLink>
-            </div>
 
-            @if (UserSession.Role == "Admin")
-            {
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="usuarios">
-                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Gerenciar Usuários
-                    </NavLink>
-                </div>
-            }
-
-        }
-    </nav>
-    @if (UserSession.IsLoggedIn)
-    {
-        <div class="logout-container">
-            <button class="btn btn-sair w-100 text-start" @onclick="Sair">
-                <span class="bi bi-box-arrow-right"></span> Sair
-            </button>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="notas">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Notas Fiscais
+            </NavLink>
         </div>
-    }
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="boletos">
+                <span class="bi bi-cash-stack-nav-menu" aria-hidden="true"></span> Boletos
+            </NavLink>
+        </div>
+    </nav>
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="logout-container">
+                <button class="btn btn-sair w-100 text-start" @onclick="Sair">Sair (@context.User.Identity?.Name)
+                </button>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+
 </div>
 
 @code {
-    private void Sair()
+    private async Task Sair()
     {
-        UserSession.Logout();
+        var authProvider = (MGMAuthStateProvider)AuthStateProvider;
+        await authProvider.UpdateAuthenticationState(null); // Limpa o LocalStorage
         Nav.NavigateTo("/");
     }
 }

@@ -1,8 +1,8 @@
 @page "/"
+@layout Layout.EmptyLayout
 @using MGMBlazor.Infrastructure.Security
 @rendermode InteractiveServer
-
-@layout Layout.EmptyLayout
+@inject AuthenticationStateProvider AuthStateProvider
 @inject UserSession UserSession
 @inject IJSRuntime JS
 @inject NavigationManager Nav
@@ -65,13 +65,12 @@
       private string usuario = "";
       private string senha = "";
       private string erro = "";
-      private bool processando = false;
       private string classeAtiva = "";
       private bool estaCarregando = false;
 
       private async Task TentarLogar()
       {
-            processando = true;
+            estaCarregando = true;
             Console.WriteLine("[DEBUG]>>>> BOTÃO DE LOGIN CLICADO!");
             string senhaDigitadaHash = PasswordHasher.GerarHash(senha);
 
@@ -80,14 +79,20 @@
 
             if (userDb != null)
             {
-                  UserSession.Login(userDb.Nome, userDb.IsAdmin, userDb.Role);
+                  var authProvider = (MGMAuthStateProvider)AuthStateProvider;
+                  await authProvider.UpdateAuthenticationState(new UserSession
+                  {
+                        Nome = userDb.Nome,
+                        Role = userDb.Role,
+                        Login = userDb.Login
+                  });
                   Nav.NavigateTo("/home");
-                  processando = false;
+                  estaCarregando = false;
             }
             else
             {
                   erro = "Usuário ou senha inválidos.";
-                  processando = false;
+                  estaCarregando = false;
             }
       }
       private async Task TratarEnter(KeyboardEventArgs e)
