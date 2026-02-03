@@ -1,11 +1,31 @@
 @page "/faturamento"
 @rendermode InteractiveServer
+@using MGMBlazor.Services.Import
+@using MGMBlazor.Infrastructure.Security
+@inject NavigationManager Nav
+@inject UserSession UserSession
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
 @inject FaturaImportService ImportService
 @inject AppDbContext DbContext
 @inject IJSRuntime JS
 @inject IConfiguration config
+
+@code {
+      protected override void OnInitialized()
+      {
+            if (!UserSession.IsLoggedIn)
+            {
+                  // Expulsa o intruso para a tela de login
+                  Nav.NavigateTo("/");
+            }
+            else if (!UserSession.IsAdmin && UserSession.Role != "Fiscal")
+            {
+                  // Usuário logado, mas sem permissão para acessar esta página
+                  Nav.NavigateTo("/home");
+            }
+      }
+}
 
 <div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <!-- Header MGM -->
@@ -144,13 +164,13 @@
                                     <label class="fw-bold small">CIDADE</label>
                                     <input type="text" class="form-control shadow-sm" @bind="cidadeBoleto" />
                               </div>
-                              <div class="col-md-2 mb-3">
+                              <div class="col-md-1 mb-3">
                                     <label class="fw-bold small">UF</label>
                                     <input type="text" class="form-control shadow-sm" @bind="ufBoleto" maxlength="2" />
                               </div>
-                              <div class="col-md-3 mb-3">
-                                    <label class="fw-bold small">CEP</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="cepBoleto" />
+                              <div class="col-md-2 mb-3">
+                                    <label class="fw-bold small">CEP (somente números)</label>
+                                    <input type="text" class="form-control shadow-sm" @bind="cepBoleto" maxlength="8" />
                               </div>
                         </div>
                         <div class="col-md-3 mb-3">

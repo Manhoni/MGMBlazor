@@ -16,4 +16,5 @@ public class Usuario
       public string SenhaHash { get; set; } = string.Empty; // Nunca salve senha pura!
 
       public bool IsAdmin { get; set; } = false;
+      public string Role { get; set; } = "Funcionario"; // Admin, Fiscal, Funcionario
 }

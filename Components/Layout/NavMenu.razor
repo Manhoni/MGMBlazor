@@ -1,6 +1,10 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using MGMBlazor.Infrastructure.Security
+@inject UserSession UserSession
+@inject NavigationManager Nav
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">MGMBlazor.web</a>
+        <a class="navbar-brand" href="">MGM Faturamento</a>
     </div>
 </div>
 
@@ -8,28 +12,61 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+        @if (UserSession.IsLoggedIn)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="faturamento">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Faturamento
-            </NavLink>
-        </div>
+            <!-- Somente Admin e Fiscal veem Faturamento -->
+            @if (UserSession.IsAdmin || UserSession.Role == "Fiscal")
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="faturamento">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Faturamento
+                    </NavLink>
+                </div>
+            }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="notas">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Notas Fiscais
+                </NavLink>
+            </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="boletos">
+                    <span class="bi bi-cash-stack-nav-menu" aria-hidden="true"></span> Boletos
+                </NavLink>
+            </div>
+
+            @if (UserSession.Role == "Admin")
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="usuarios">
+                        <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Gerenciar Usuários
+                    </NavLink>
+                </div>
+            }
+
+        }
     </nav>
+    @if (UserSession.IsLoggedIn)
+    {
+        <div class="logout-container">
+            <button class="btn btn-sair w-100 text-start" @onclick="Sair">
+                <span class="bi bi-box-arrow-right"></span> Sair
+            </button>
+        </div>
+    }
 </div>
+
+@code {
+    private void Sair()
+    {
+        UserSession.Logout();
+        Nav.NavigateTo("/");
+    }
+}

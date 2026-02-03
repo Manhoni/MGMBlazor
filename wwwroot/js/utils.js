@@ -16,3 +16,8 @@ window.abrirPdfNoNavegador = (base64String) => {
             alert("Não foi possível abrir o PDF. O banco enviou um arquivo corrompido (comum em ambiente de teste).");
       }
 };
+
+window.clicarNoBotaoLogin = () => {
+      const btn = document.getElementById("btn-login");
+      if (btn) btn.click();
+};

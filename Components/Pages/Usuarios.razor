@@ -1,0 +1,139 @@
+@page "/usuarios"
+@rendermode InteractiveServer
+@using MGMBlazor.Domain.Entities
+@using MGMBlazor.Infrastructure.Security
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject UserSession UserSession
+@inject NavigationManager Nav
+
+<PageTitle>Gerenciar Usuários - MGM</PageTitle>
+
+<div class="container mt-4">
+      <div class="d-flex justify-content-between align-items-center mb-4 p-3 shadow-sm rounded"
+            style="background-color: #fff; border-left: 8px solid #76b82a;">
+            <h2 style="color: #333; margin: 0; font-weight: bold;">Gerenciar Usuários</h2>
+            <button class="btn btn-success" @onclick="() => mostrarModal = true">
+                  <i class="bi bi-person-plus"></i> Novo Usuário
+            </button>
+      </div>
+
+      @if (UserSession.Role != "Admin")
+      {
+            <div class="alert alert-danger">Acesso restrito ao administrador.</div>
+      }
+      else
+      {
+            <table class="table table-hover shadow-sm bg-white rounded">
+                  <thead class="table-dark">
+                        <tr>
+                              <th>Nome</th>
+                              <th>Login</th>
+                              <th>Perfil (Role)</th>
+                              <th>Ações</th>
+                        </tr>
+                  </thead>
+                  <tbody>
+                        @foreach (var user in listaUsuarios)
+                        {
+                              <tr>
+                                    <td>@user.Nome</td>
+                                    <td>@user.Login</td>
+                                    <td><span class="badge bg-secondary">@user.Role</span></td>
+                                    <td>
+                                          <button class="btn btn-sm btn-outline-danger"
+                                                @onclick="() => DeletarUsuario(user.Id)">Excluir</button>
+                                    </td>
+                              </tr>
+                        }
+                  </tbody>
+            </table>
+      }
+</div>
+
+@if (mostrarModal)
+{
+      <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5)">
+            <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-dark text-white">
+                              <h5 class="modal-title">Cadastrar Novo Usuário</h5>
+                              <button type="button" class="btn-close btn-close-white"
+                                    @onclick="() => mostrarModal = false"></button>
+                        </div>
+                        <div class="modal-body">
+                              <div class="mb-3">
+                                    <label class="small fw-bold">NOME COMPLETO</label>
+                                    <input type="text" class="form-control shadow-sm" @bind="novoUser.Nome" />
+                              </div>
+                              <div class="mb-3">
+                                    <label class="small fw-bold">LOGIN (USUÁRIO)</label>
+                                    <input type="text" class="form-control shadow-sm" @bind="novoUser.Login" />
+                              </div>
+                              <div class="mb-3">
+                                    <label class="small fw-bold">SENHA INICIAL</label>
+                                    <input type="password" class="form-control shadow-sm" @bind="senhaTemporaria" />
+                              </div>
+                              <div class="mb-3">
+                                    <label class="small fw-bold">PERFIL DE ACESSO</label>
+                                    <select class="form-select" @bind="novoUser.Role">
+                                          <option value="Admin">Administrador</option>
+                                          <option value="Fiscal">Fiscal (Notas e Boletos)</option>
+                                          <option value="Funcionario">Funcionário (Apenas Consulta)</option>
+                                    </select>
+                              </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                              <button class="btn btn-secondary" @onclick="() => mostrarModal = false">Cancelar</button>
+                              <button class="btn btn-success px-4" @onclick="SalvarNovoUsuario">SALVAR USUÁRIO</button>
+                        </div>
+                  </div>
+            </div>
+      </div>
+}
+
+@code {
+      private List<Usuario> listaUsuarios = new();
+      private Usuario novoUser = new();
+      private string senhaTemporaria = "";
+      private bool mostrarModal = false;
+
+      protected override async Task OnInitializedAsync()
+      {
+            if (UserSession.Role == "Admin")
+            {
+                  await CarregarUsuarios();
+            }
+      }
+
+      private async Task CarregarUsuarios() =>
+      listaUsuarios = await DbContext.Usuarios.ToListAsync();
+
+      private async Task SalvarNovoUsuario()
+      {
+            if (string.IsNullOrEmpty(senhaTemporaria)) return;
+
+            // USA O HASHER QUE CRIAMOS ONTEM!
+            novoUser.SenhaHash = PasswordHasher.GerarHash(senhaTemporaria);
+            novoUser.IsAdmin = novoUser.Role == "Admin";
+
+            DbContext.Usuarios.Add(novoUser);
+            await DbContext.SaveChangesAsync();
+
+            novoUser = new();
+            senhaTemporaria = "";
+            mostrarModal = false;
+            await CarregarUsuarios();
+      }
+
+      private async Task DeletarUsuario(int id)
+      {
+            var user = await DbContext.Usuarios.FindAsync(id);
+            if (user != null)
+            {
+                  DbContext.Usuarios.Remove(user);
+                  await DbContext.SaveChangesAsync();
+                  await CarregarUsuarios();
+            }
+      }
+}

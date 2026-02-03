@@ -62,10 +62,8 @@ public class NfseService : INfseService
     {
         var cnpjPrestador = _config.Prestador.Cnpj;
         // URL padrão de consulta de Maringá (ajuste se o manual indicar outra)
-        //https://visualizar-nfse.ecity.maringa.pr.gov.br/?cnpj=02152507000196&num=1926&cod=P1N1FGXMJ
-        //https://nfse-ws.ecity.maringa.pr.gov.br/v2.01/nfse.aspx?cc=P1N1FGXMJ&num=1926&cnpj=02152507000196;
-        return $"https://nfse-ws.ecity.maringa.pr.gov.br/v2.01/nfse.aspx?cc={codigoVerificacao}&num={numeroNota}&cnpj={cnpjPrestador}";
-        //return $"https://visualizar-nfse.ecity.maringa.pr.gov.br/?cnpj={cnpjPrestador}&num={numeroNota}&cod={codigoVerificacao}";
+        //https://maringa.fintel.com.br/ImprimirNfse/1931/02152507000196/EWCJVYB1U   // numeros teste
+        return $"https://maringa.fintel.com.br/ImprimirNfse/{numeroNota}/{cnpjPrestador}/{codigoVerificacao}";
     }
 
     public async Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero)

@@ -1,0 +1,76 @@
+/* Container que centraliza tudo na tela */
+.login-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* O cartão de login */
+.login-card {
+      width: 100%;
+      max-width: 400px;
+      padding: 2.5rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border-top: 6px solid #76b82a;
+      /* Verde MGM no topo */
+}
+
+/* Títulos */
+.login-card h4 {
+      color: #333;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+}
+
+/* Estilização dos campos de texto (Bordas finas e discretas) */
+.form-control {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 0.75rem;
+      transition: border-color 0.2s;
+}
+
+.form-control:focus {
+      border-color: #76b82a;
+      box-shadow: 0 0 0 0.2rem rgba(118, 184, 42, 0.1);
+      outline: none;
+}
+
+/* O Botão MGM */
+.btn-login {
+      background-color: #2e2e2e;
+      /* Cinza quase preto */
+      color: white;
+      border: none;
+      padding: 0.8rem;
+      font-weight: 600;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+}
+
+.btn-login:hover {
+      background-color: #1a1a1a;
+      transform: translateY(-1px);
+}
+
+/* Efeito de afundar (Ativado pelo mouse ou pela classe C#) */
+.btn-login:active,
+.btn-fake-active {
+      transform: translateY(2px) !important;
+      background-color: #000;
+      box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-login:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+}

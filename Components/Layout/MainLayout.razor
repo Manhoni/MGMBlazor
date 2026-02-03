@@ -1,23 +1,65 @@
 ﻿@inherits LayoutComponentBase
+@inject MGMBlazor.Infrastructure.Security.UserSession UserSession
+@inject NavigationManager Nav
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    @if (UserSession.IsLoggedIn)
+    {
+        <div class="sidebar">
+            <NavMenu />
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
+        <main>
+            <div class="top-row px-4 d-flex justify-content-between align-items-center">
+                <span>Bem-vindo, <strong>@UserSession.NomeUsuario</strong></span>
+                <span class="badge bg-success" style="background-color: #76b82a !important;">
+                    @UserSession.Role</span>
+            </div>
+
+            <article class="content px-4">
+                @if (PodeAcessarPaginaAtual())
+                {
+                    @Body
+                }
+                else
+                {
+                    <div class="alert alert-warning mt-5">
+                        <h4>Acesso Negado</h4>
+                        <p>Seu perfil (@UserSession.Role) não tem permissão para acessar esta área.</p>
+                        <button class="btn btn-dark" @onclick='() => Nav.NavigateTo("/home")'>Voltar para Home</button>
+                    </div>
+                }
+            </article>
+        </main>
+    }
+    else
+    {
+        <main>@Body</main>
+    }
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+@code {
+    private bool PodeAcessarPaginaAtual()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri).AbsolutePath.ToLower();
+
+        // Regras de bloqueio
+        if (UserSession.Role == "Funcionario")
+        {
+            if (uri.Contains("usuarios") || uri.Contains("faturamento")) return false;
+        }
+        if (UserSession.Role == "Fiscal")
+        {
+            if (uri.Contains("usuarios")) return false;
+        }
+
+        return true;
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Se nem logado está e não é a raiz, chuta pro login
+        var uri = Nav.ToAbsoluteUri(Nav.Uri).AbsolutePath;
+        if (!UserSession.IsLoggedIn && uri != "/") Nav.NavigateTo("/");
+    }
+}

@@ -3,23 +3,25 @@
 @rendermode InteractiveServer
 
 @layout Layout.EmptyLayout
+@inject UserSession UserSession
+@inject IJSRuntime JS
 @inject NavigationManager Nav
 @inject AppDbContext DbContext
 
-<div class="d-flex justify-content-center align-items-center vh-100" style="background-color: #f4f4f4;">
-      <div class="card shadow-lg p-4" style="width: 400px; border-top: 5px solid #76b82a;">
+<div class="login-container">
+      <div class="login-card">
             <div class="text-center mb-4">
-                  <img src="mgmLogo.jpg" height="80" />
-                  <h4 class="mt-2 fw-bold">Acesso ao Sistema</h4>
+                  <img src="mgmLogo.jpg" height="70" />
+                  <h4 class="mt-3">Acesso ao Sistema</h4>
             </div>
 
             <div class="mb-3">
-                  <label class="form-label">Usuário</label>
+                  <label class="form-label small fw-bold text-muted">USUÁRIO</label>
                   <input type="text" class="form-control" @bind="usuario" autofocus />
             </div>
 
-            <div class="mb-3">
-                  <label class="form-label">Senha</label>
+            <div class="mb-4">
+                  <label class="form-label small fw-bold text-muted">SENHA</label>
                   <input type="password" class="form-control" @bind="senha" @onkeydown="TratarEnter" />
             </div>
 
@@ -28,13 +30,13 @@
                   <div class="alert alert-danger py-2 small">@erro</div>
             }
 
-            <button type="button" class="btn btn-dark w-100 py-2 shadow-sm btn-login"
-                  style="background-color: #2e2e2e; border-bottom: 4px solid #76b82a;" @onclick="TentarLogar"
-                  disabled="@processando">
+            @* Note a classe dinâmica @classeAtiva para o ENTER funcionar visualmente *@
+            <button id="btn-login" type="button" class="btn-login w-100 @classeAtiva" @onclick="TentarLogar"
+                  disabled="@estaCarregando">
 
-                  @if (processando)
+                  @if (estaCarregando)
                   {
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span class="spinner-border spinner-border-sm"></span>
                         <span class="ms-2">AUTENTICANDO...</span>
                   }
                   else
@@ -64,6 +66,8 @@
       private string senha = "";
       private string erro = "";
       private bool processando = false;
+      private string classeAtiva = "";
+      private bool estaCarregando = false;
 
       private async Task TentarLogar()
       {
@@ -76,7 +80,8 @@
 
             if (userDb != null)
             {
-                  Nav.NavigateTo("/faturamento");
+                  UserSession.Login(userDb.Nome, userDb.IsAdmin, userDb.Role);
+                  Nav.NavigateTo("/home");
                   processando = false;
             }
             else
@@ -87,8 +92,14 @@
       }
       private async Task TratarEnter(KeyboardEventArgs e)
       {
-            if (e.Code == "Enter" || e.Code == "NumpadEnter")
+            if (e.Key == "Enter" || e.Key == "NumpadEnter")
             {
+                  classeAtiva = "btn-fake-active"; // Ativa o visual de "afundar"
+                  StateHasChanged();
+
+                  await Task.Delay(100); // Pequena pausa para o usuário ver o clique
+
+                  classeAtiva = ""; // Volta ao normal
                   await TentarLogar();
             }
       }
