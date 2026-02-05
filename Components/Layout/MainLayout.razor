@@ -1,13 +1,28 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthStateProvider
+
+@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    <AuthorizeView>
+        <Authorized>
+            @* A barra lateral SÓ aparece se estiver logado *@
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row px-4 d-flex justify-content-between align-items-center bg-white border-bottom">
+            <span class="text-muted small">MGM - Medicina e Segurança do Trabalho</span>
+
+            <AuthorizeView>
+                <Authorized>
+                    <span>Olá, <strong class="text-dark">@context.User.Identity?.Name</strong></span>
+                </Authorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
