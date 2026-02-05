@@ -20,8 +20,8 @@
 
 <h1>Cadastrar Usuário</h1>
 
-<div class="row">
-    <div class="col-md-4">
+<div class="row login-container">
+    <div class="col-md-4 login-card-mgm p-4">
         <StatusMessage Message="@Message" />
         <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
@@ -58,13 +58,13 @@
             <button type="submit" class="w-100 btn btn-lg btn-primary">Registrar</button>
         </EditForm>
     </div>
-    <div class="col-md-6 col-md-offset-2">
+    @* <div class="col-md-6 col-md-offset-2">
         <section>
             <h3>Utilize outro serviço para registrar-se</h3>
             <hr />
             <ExternalLoginPicker />
         </section>
-    </div>
+    </div> *@
 </div>
 
 @code {
@@ -145,12 +145,13 @@
 
     private sealed class InputModel
     {
-        [Required]
+        [Required(ErrorMessage = "O campo Nome Completo é obrigatório.")]
         [Display(Name = "Nome Completo")]
         public string NomeCompleto { get; set; } = "";
 
-        [Required]
-        [EmailAddress]
+        [Required(ErrorMessage = "O campo Email é obrigatório.")]
+        [EmailAddress(ErrorMessage = "O campo Email não está no formato correto.")]
+
         [Display(Name = "Email")]
         public string Email { get; set; } = "";
 
@@ -158,7 +159,7 @@
         [Display(Name = "Perfil de Acesso")]
         public string Role { get; set; } = "Funcionario";
 
-        [Required]
+        [Required(ErrorMessage = "O campo Senha é obrigatório.")]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]

@@ -13,10 +13,10 @@
 <div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <!-- Header MGM -->
       <div class="d-flex align-items-center mb-4 p-3 shadow-sm rounded"
-            style="background-color: #ffffff; border-left: 8px solid #76b82a;">
+                 style="background-color: #ffffff; border-left: 8px solid #76b82a;">
             <img src="mgmLogo.jpg" height="60" class="me-3" />
             <div>
-                  <h2 style="color: #333; margin: 0; font-weight: bold;">MGM - Gestão de Faturamento</h2>
+                  <h2 style="color: #333; margin: 0; font-weight: bold;"> Gestão de Faturamento</h2>
                   <small class="text-muted">Medicina e Segurança do Trabalho</small>
             </div>
       </div>
@@ -52,20 +52,20 @@
                               <div class="col-md-3 mb-3">
                                     <label class="fw-bold text-muted small">CNPJ</label>
                                     <input type="text" class="form-control shadow-sm" value="@FormatarCnpj(resumo.CnpjCpf)"
-                                          readonly />
+                                           readonly />
                               </div>
                               <div class="col-md-3 mb-3">
                                     <label class="fw-bold text-muted small">VALOR TOTAL</label>
                                     <div class="input-group">
                                           <span class="input-group-text shadow-sm">R$</span>
                                           <input type="text" class="form-control fw-bold text-success shadow-sm"
-                                                @bind="ValorExibicao" />
+                                                 @bind="ValorExibicao" />
                                     </div>
                               </div>
                               <div class="col-md-6 mb-3">
                                     <label class="fw-bold text-muted small">E-MAIL PARA ENVIO (NOTA/BOLETO) *</label>
                                     <input type="email" class="form-control shadow-sm" @bind="emailCliente"
-                                          placeholder="exemplo@cliente.com" />
+                                           placeholder="exemplo@cliente.com" />
                               </div>
                               <div class="col-md-6 mb-3">
                                     <label class="fw-bold text-muted small">SERVIÇO PRESTADO *</label>
@@ -84,107 +84,107 @@
 
                         <div class="mt-4">
                               <button class="btn btn-lg text-white w-100 shadow"
-                                    style="background-color: #2e2e2e; border-bottom: 4px solid #76b82a;"
-                                    @onclick="GerarFaturamento" disabled="@processando">
+                                      style="background-color: #2e2e2e; border-bottom: 4px solid #76b82a;"
+                                      @onclick="GerarFaturamento" disabled="@processando">
                                     @if (processando)
                                     {
                                           <span class="spinner-border spinner-border-sm"></span>
                                           <span>
                                                 PROCESSANDO...</span>
-                                    }
+                                          }
                                     else
-                                    {
-                                          <span>EMITIR NOTA FISCAL</span>
-                                    }
-                              </button>
+                                          {
+                                                <span>EMITIR NOTA FISCAL</span>
+                                          }
+                                    </button>
+                              </div>
                         </div>
                   </div>
-            </div>
-      }
+            }
 
-      <!-- EXIBIÇÃO DE ERROS DA PREFEITURA -->
-      @if (respostaNfse != null && !respostaNfse.Sucesso)
-      {
-            <div class="alert alert-danger shadow">
-                  <h5>❌ Erro no Processamento:</h5>
-                  <ul>
-                        @foreach (var erro in respostaNfse.Erros)
-                        {
-                              <li>@erro</li>
-                        }
-                  </ul>
-            </div>
-      }
-
-      @if (notaGeradaComSucesso)
-      {
-            <!-- 3. CONFIGURAÇÃO DO BOLETO (Só aparece após a nota) -->
-            <div class="card shadow-lg border-0 mb-4">
-                  <div class="card-header text-white d-flex justify-content-between" style="background-color: #76b82a;">
-                        <h5 class="mb-0">✅ Nota @respostaNfse?.NumeroNota Emitida! Agora configure o Boleto:</h5>
-                        <a href="@linkNota" target="_blank" class="btn btn-sm btn-light"> PDF da Nota Fiscal</a>
+            <!-- EXIBIÇÃO DE ERROS DA PREFEITURA -->
+            @if (respostaNfse != null && !respostaNfse.Sucesso)
+            {
+                  <div class="alert alert-danger shadow">
+                        <h5>❌ Erro no Processamento:</h5>
+                        <ul>
+                              @foreach (var erro in respostaNfse.Erros)
+                              {
+                                    <li>@erro</li>
+                              }
+                        </ul>
                   </div>
-                  <div class="card-body bg-light">
-                        <div class="row">
+            }
+
+            @if (notaGeradaComSucesso)
+            {
+                  <!-- 3. CONFIGURAÇÃO DO BOLETO (Só aparece após a nota) -->
+                  <div class="card shadow-lg border-0 mb-4">
+                        <div class="card-header text-white d-flex justify-content-between" style="background-color: #76b82a;">
+                              <h5 class="mb-0">✅ Nota @respostaNfse?.NumeroNota Emitida! Agora configure o Boleto:</h5>
+                              <a href="@linkNota" target="_blank" class="btn btn-sm btn-light"> PDF da Nota Fiscal</a>
+                        </div>
+                        <div class="card-body bg-light">
+                              <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                          <label class="fw-bold small">VENCIMENTO</label>
+                                          <input type="date" class="form-control shadow-sm" @bind="dataVencimentoBoleto" />
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                          <label class="fw-bold small">PARCELA</label>
+                                          <input type="number" class="form-control shadow-sm" @bind="numeroParcela" />
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                          <label class="fw-bold small">SEU NUMERO</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="seuNumero" />
+                                    </div>
+                                    <div class="col-md-7 mb-3">
+                                          <label class="fw-bold small">ENDEREÇO DO PAGADOR *</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="enderecoBoleto"
+                                                 placeholder="Rua, Número, Bairro" />
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                          <label class="fw-bold small">CIDADE</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="cidadeBoleto" />
+                                    </div>
+                                    <div class="col-md-1 mb-3">
+                                          <label class="fw-bold small">UF</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="ufBoleto" maxlength="2" />
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                          <label class="fw-bold small">CEP (somente números)</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="cepBoleto" maxlength="8" />
+                                    </div>
+                              </div>
                               <div class="col-md-3 mb-3">
-                                    <label class="fw-bold small">VENCIMENTO</label>
-                                    <input type="date" class="form-control shadow-sm" @bind="dataVencimentoBoleto" />
+                                    <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
                               </div>
-                              <div class="col-md-2 mb-3">
-                                    <label class="fw-bold small">PARCELA</label>
-                                    <input type="number" class="form-control shadow-sm" @bind="numeroParcela" />
-                              </div>
-                              <div class="col-md-2 mb-3">
-                                    <label class="fw-bold small">SEU NUMERO</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="seuNumero" />
-                              </div>
-                              <div class="col-md-7 mb-3">
-                                    <label class="fw-bold small">ENDEREÇO DO PAGADOR *</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="enderecoBoleto"
-                                          placeholder="Rua, Número, Bairro" />
-                              </div>
-                              <div class="col-md-4 mb-3">
-                                    <label class="fw-bold small">CIDADE</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="cidadeBoleto" />
-                              </div>
-                              <div class="col-md-1 mb-3">
-                                    <label class="fw-bold small">UF</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="ufBoleto" maxlength="2" />
-                              </div>
-                              <div class="col-md-2 mb-3">
-                                    <label class="fw-bold small">CEP (somente números)</label>
-                                    <input type="text" class="form-control shadow-sm" @bind="cepBoleto" maxlength="8" />
-                              </div>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                              <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
-                        </div>
 
-                        <div class="alert alert-warning py-2 small">
-                              O Sicoob exige endereço completo para registrar o boleto.
-                        </div>
-                        @if (!boletoGerado)
-                        {
-                              <button class="btn btn-success btn-lg w-100" @onclick="GerarBoletoAgora" disabled="@processando">
-                                    GERAR E REGISTRAR BOLETO NO SICOOB
-                              </button>
-                        }
-                        else
-                        {
-                              <div class="alert alert-success text-center fw-bold">
-                                    ✅ Boleto vinculado com sucesso!
+                              <div class="alert alert-warning py-2 small">
+                                    O Sicoob exige endereço completo para registrar o boleto.
                               </div>
-                        }
+                              @if (!boletoGerado)
+                              {
+                                    <button class="btn btn-success btn-lg w-100" @onclick="GerarBoletoAgora" disabled="@processando">
+                                          GERAR E REGISTRAR BOLETO NO SICOOB
+                                    </button>
+                              }
+                              else
+                              {
+                                    <div class="alert alert-success text-center fw-bold">
+                                          ✅ Boleto vinculado com sucesso!
+                                    </div>
+                              }
+                        </div>
                   </div>
-            </div>
-      }
-      @if (boletoGerado)
-      {
-            <div class="alert alert-success mt-2 py-1 shadow-sm">
-                  <i class="bi bi-check-circle-fill"></i> Boleto registrado e pronto para visualização!
-            </div>
-      }
-</div>
+            }
+            @if (boletoGerado)
+            {
+                  <div class="alert alert-success mt-2 py-1 shadow-sm">
+                        <i class="bi bi-check-circle-fill"></i> Boleto registrado e pronto para visualização!
+                  </div>
+            }
+      </div>
 
 @code {
       private FaturaResumo? resumo;

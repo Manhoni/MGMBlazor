@@ -12,14 +12,15 @@
 
 <PageTitle>Log in</PageTitle>
 
-<h1>Entrar</h1>
-<div class="row">
-    <div class="col-md-4">
+<h1></h1>
+<div class="row login-container">
+    <div class="col-md-4 hadow-lg p-4 login-card-mgm text-center">
         <section>
             <StatusMessage Message="@errorMessage" />
             <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
                 <DataAnnotationsValidator />
-                <h2>Utilize sua conta para fazer login</h2>
+                <img src="mgmLogo.jpg" height="80" />
+                <h2>Acesso ao Sistema</h2>
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
@@ -45,6 +46,7 @@
                 </div>
                 <div>
                     <p>
+                        <h2> </h2>
                         <a href="Account/ForgotPassword">Esqueceu sua senha?</a>
                     </p>
                     <p>
@@ -59,13 +61,13 @@
                 </EditForm>
             </section>
         </div>
-        <div class="col-md-6 col-md-offset-2">
+        @* <div class="col-md-6 col-md-offset-2">
             <section>
                 <h3>Utilize outro serviço para fazer login</h3>
                 <hr />
                 <ExternalLoginPicker />
             </section>
-        </div>
+        </div> *@
     </div>
 
 @code {
@@ -119,11 +121,11 @@
 
     private sealed class InputModel
     {
-        [Required]
-        [EmailAddress]
+        [Required(ErrorMessage = "O campo Email é obrigatório.")]
+        [EmailAddress(ErrorMessage = "O campo Email não é válido.")]
         public string Email { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "O campo Senha é obrigatório.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
 
