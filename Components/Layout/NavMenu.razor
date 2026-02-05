@@ -1,11 +1,10 @@
-﻿@using MGMBlazor.Infrastructure.Security
-@inject UserSession UserSession
-@inject AuthenticationStateProvider AuthStateProvider
-@inject NavigationManager Nav
+﻿@implements IDisposable
+
+@inject NavigationManager NavigationManager
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">MGM Faturamento</a>
+        <a class="navbar-brand" href="">MGMBlazor</a>
     </div>
 </div>
 
@@ -13,62 +12,80 @@
 
 <div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="faturamento">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Faturamento
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="auth">
+                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+            </NavLink>
+        </div>
+
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="home" Match="NavLinkMatch.All">
-                        <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                    <NavLink class="nav-link" href="Account/Manage">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
                     </NavLink>
                 </div>
-                <AuthorizeView Roles="Admin,Fiscal" Context="roleContext">
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="faturamento">
-                            <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Faturamento
-                        </NavLink>
-                    </div>
-                </AuthorizeView>
-
-                @if (context.User.IsInRole("Admin"))
-                {
-                    <div class="nav-item px-3">
-                        <NavLink class="nav-link" href="usuarios">
-                            <span class="bi bi-people-fill-nav-menu" aria-hidden="true"></span> Gerenciar Usuários
-                        </NavLink>
-                    </div>
-                }
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Register">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <button type="submit" class="nav-link">
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        </button>
+                    </form>
+                </div>
             </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Login">
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                    </NavLink>
+                </div>
+            </NotAuthorized>
         </AuthorizeView>
-
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="notas">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Notas Fiscais
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="boletos">
-                <span class="bi bi-cash-stack-nav-menu" aria-hidden="true"></span> Boletos
-            </NavLink>
-        </div>
     </nav>
-
-    <AuthorizeView>
-        <Authorized>
-            <div class="logout-container">
-                <button class="btn btn-sair w-100 text-start" @onclick="Sair">Sair (@context.User.Identity?.Name)
-                </button>
-            </div>
-        </Authorized>
-    </AuthorizeView>
-
 </div>
 
 @code {
-    private async Task Sair()
+    private string? currentUrl;
+
+    protected override void OnInitialized()
     {
-        var authProvider = (MGMAuthStateProvider)AuthStateProvider;
-        await authProvider.UpdateAuthenticationState(null); // Limpa o LocalStorage
-        Nav.NavigateTo("/");
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }

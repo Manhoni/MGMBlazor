@@ -324,14 +324,17 @@ using MGMBlazor.Infrastructure.NFSe.Abrasf.Parsing;
 using MGMBlazor.Infrastructure.NFSe.Certificates;
 using MGMBlazor.Infrastructure.NFSe.Configuration;
 using MGMBlazor.Infrastructure.NFSe.Soap;
-using MGMBlazor.Infrastructure.Security;
 using MGMBlazor.Services.Import;
 using MGMBlazor.Services.Nfse;
 using MGMBlazor.Services.Sicoob;
+using MGMBlazor.web.Components.Account;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using MGMBlazor.Domain.Entities;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -341,6 +344,7 @@ builder.Services.AddRazorComponents()
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // --- 2. CERTIFICADOS (SINGLETON) ---
 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -368,9 +372,40 @@ builder.Services.AddScoped<INfseRetornoParser, AbrasfRetornoParser>();
 builder.Services.AddScoped<FintelSoapClient>();
 builder.Services.AddScoped<FaturaImportService>(); // Novo serviço de CSV
 builder.Services.AddAuthenticationCore();
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<ProtectedLocalStorage>();
-builder.Services.AddScoped<AuthenticationStateProvider, MGMAuthStateProvider>();
+
+// Adiciona os serviços de autenticação e autorização padrão do .NET
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IdentityUserAccessor>();
+builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+
+// 2. Habilita Autenticação por Cookies (Padrão para Web Apps)
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = IdentityConstants.ApplicationScheme;
+        options.DefaultSignInScheme = IdentityConstants.ApplicationScheme;
+    })
+    .AddIdentityCookies();
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = false;
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
+})
+.AddRoles<IdentityRole>() // Habilita o sistema de Admin/Fiscal/Funcionario
+.AddEntityFrameworkStores<AppDbContext>()
+.AddSignInManager()
+.AddDefaultTokenProviders();
+
+//builder.Services.AddAuthorization();
+//builder.Services.AddAuthentication();
+
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 builder.Services.AddHttpClient<INfseService, NfseService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHttpClient<ISicoobService, SicoobService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
@@ -383,16 +418,39 @@ System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 var app = builder.Build();
 
 // --- 4. PIPELINE HTTP ---
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseMigrationsEndPoint();
+}
+else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
+// --- ATIVAÇÃO DO SEEDER ---
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    if (!await userManager.Users.AnyAsync())
+    {
+        await DbSeeder.SeedAsync(userManager, roleManager);
+    }
+}
+
+app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseAntiforgery();
+// app.UseAuthentication();
+// app.UseAuthorization();
 
+//app.MapIdentityApi<ApplicationUser>();
 app.MapRazorComponents<MGMBlazor.web.Components.App>() // Verifique se o namespace MGMBlazor.Web.Components está correto
     .AddInteractiveServerRenderMode();
+
+app.MapAdditionalIdentityEndpoints(); // Mapeia endpoints adicionais para gerenciamento de usuários e roles
 
 app.Run();

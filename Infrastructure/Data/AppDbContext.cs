@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using MGMBlazor.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace MGMBlazor.Infrastructure.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -13,7 +14,7 @@ public class AppDbContext : DbContext
     // Se você quiser salvar os detalhes dos serviços e da nota bruta, adicione-os aqui:
     public DbSet<Servico> Servicos { get; set; }
     public DbSet<Cobranca> Cobrancas { get; set; }
-    public DbSet<Usuario> Usuarios { get; set; }
+    //public DbSet<Usuario> Usuarios { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

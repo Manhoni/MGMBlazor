@@ -1,32 +1,19 @@
-﻿@using Microsoft.AspNetCore.Components.Authorization;
-
-<CascadingAuthenticationState>
-    <Router AppAssembly="@typeof(Program).Assembly">
-        <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)">
-                <NotAuthorized>
-                    <AuthorizeView Context="authContext">
-                        <Authorized>
-                            @* CASO 1: Está logado, mas tentou entrar onde não devia (ex: Funcionario em Usuarios) *@
-                            <div class="mt-5 text-center">
-                                <h1 class="display-1">🚫</h1>
-                                <h3 class="text-danger">Acesso Restrito</h3>
-                                <p>Seu perfil não tem permissão para esta página.</p>
-                                <a href="home" class="btn btn-dark">Voltar para Início</a>
-                            </div>
-                        </Authorized>
-                        <NotAuthorized>
-                            <RedirectToLogin Url="/" />
-                        </NotAuthorized>
-                    </AuthorizeView>
-                </NotAuthorized>
-            </AuthorizeRouteView>
-            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-        </Found>
-        <NotFound>
-            <LayoutView Layout="@typeof(Layout.MainLayout)">
-                <p>Página não encontrada.</p>
-            </LayoutView>
-        </NotFound>
-    </Router>
-</CascadingAuthenticationState>
+﻿@using MGMBlazor.web.Components.Account.Shared
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <RedirectToLogin />
+            </NotAuthorized>
+            <Authorizing>
+                <p>Validando acesso...</p>
+            </Authorizing>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <p role="alert">Desculpe, página não encontrada.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

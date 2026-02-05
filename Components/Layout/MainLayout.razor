@@ -1,28 +1,23 @@
 ﻿@inherits LayoutComponentBase
-@inject MGMBlazor.Infrastructure.Security.UserSession UserSession
-@inject NavigationManager Nav
 
 <div class="page">
-    <AuthorizeView>
-        <Authorized>
-            <div class="sidebar">
-                <NavMenu />
-            </div>
+    <div class="sidebar">
+        <NavMenu />
+    </div>
 
-            <main>
-                <div class="top-row px-4 d-flex justify-content-between align-items-center">
-                    <span>Bem-vindo, <strong>@context.User.Identity?.Name</strong></span>
-                    <span class="badge bg-success" style="background-color: #76b82a !important;">
-                        @context.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
-                </div>
-                <article class="content px-4">
-                    @Body
-                </article>
-            </main>
-        </Authorized>
+    <main>
+        <div class="top-row px-4">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        </div>
 
-        <NotAuthorized>
-            <main>@Body</main>
-        </NotAuthorized>
-    </AuthorizeView>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
 </div>

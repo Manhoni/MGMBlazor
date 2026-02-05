@@ -2,9 +2,7 @@
 @attribute [Authorize(Roles = "Admin,Fiscal")]
 @rendermode InteractiveServer
 @using MGMBlazor.Services.Import
-@using MGMBlazor.Infrastructure.Security
 @inject NavigationManager Nav
-@inject UserSession UserSession
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
 @inject FaturaImportService ImportService
