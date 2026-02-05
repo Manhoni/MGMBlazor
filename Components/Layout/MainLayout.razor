@@ -20,7 +20,7 @@
 
             <AuthorizeView>
                 <Authorized>
-                    <span>Olá, <strong class="text-dark">@context.User.Identity?.Name</strong></span>
+                    <span>Olá, <strong class="text-dark">@context.User.FindFirst("NomeReal")?.Value</strong></span>
                 </Authorized>
             </AuthorizeView>
         </div>

@@ -335,6 +335,7 @@ using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using MGMBlazor.Domain.Entities;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using MGMBlazor.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -400,7 +401,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddRoles<IdentityRole>() // Habilita o sistema de Admin/Fiscal/Funcionario
 .AddEntityFrameworkStores<AppDbContext>()
 .AddSignInManager()
-.AddDefaultTokenProviders();
+.AddDefaultTokenProviders()
+.AddClaimsPrincipalFactory<MGMClaimsFactory>();
 
 //builder.Services.AddAuthorization();
 //builder.Services.AddAuthentication();
