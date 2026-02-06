@@ -9,6 +9,9 @@ public class NotaFiscalEmitida
     public int VendaId { get; set; } // Link com sua tabela de vendas
     public DateTime DataEmissao { get; set; }
 
+    public decimal Valor { get; set; }
+    public string CnpjTomador { get; set; } = string.Empty;
+
     // Dados que o seu Parser vai preencher:
     public string? NumeroNota { get; set; }
     public string? CodigoVerificacao { get; set; }

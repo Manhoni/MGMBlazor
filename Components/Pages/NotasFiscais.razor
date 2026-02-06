@@ -1,0 +1,213 @@
+@page "/notas"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@inject INfseService NfseService
+@inject ISicoobService SicoobService
+@inject AppDbContext DbContext
+@inject IJSRuntime JS
+
+<div class="container-fluid mt-3">
+      <div
+            class="d-flex justify-content-between align-items-center mb-3 p-2 shadow-sm rounded bg-white border-left-mgm">
+            <h4 class="m-0 fw-bold text-dark">📋 Notas Fiscais Emitidas</h4>
+            <button class="btn btn-sm btn-success" @onclick="AbrirModalNovaNota">
+                  <span class="bi bi-plus-lg"></span> Geração Avulsa
+            </button>
+      </div>
+
+      <!-- FILTROS -->
+      <div class="card p-2 mb-3 shadow-sm border-0 bg-light">
+            <div class="row align-items-end">
+                  <div class="col-md-2">
+                        <label class="small fw-bold">INÍCIO</label>
+                        <input type="date" class="form-control form-control-sm" @bind="dataInicio" />
+                  </div>
+                  <div class="col-md-2">
+                        <label class="small fw-bold">FIM</label>
+                        <input type="date" class="form-control form-control-sm" @bind="dataFim" />
+                  </div>
+                  <div class="col-md-3">
+                        <button class="btn btn-sm btn-dark px-4" @onclick="CarregarNotas">🔎 Filtrar</button>
+                        <h3></h3>
+                        <button class="btn btn-sm btn-primary ms-2" @onclick="AtualizarSelecionadas"
+                                disabled="@(!notasSelecionadas.Any())">
+                              🔄 Atualizar Status (@notasSelecionadas.Count)
+                        </button>
+                  </div>
+            </div>
+      </div>
+
+      <!-- GRID ESTILO EXCEL -->
+      <div class="table-responsive shadow-sm rounded">
+            <table class="table table-sm table-hover table-bordered bg-white m-0">
+                  <thead class="bg-dark text-white">
+                        <tr>
+                              <th style="width: 30px;"><input type="checkbox" @onchange="ToggleTodos" /></th>
+                              <th>RPS</th>
+                              <th>Nº Nota</th>
+                              <th>CNPJ Tomador</th>
+                              <th>Data Emissão</th>
+                              <th>Valor (R$)</th>
+                              <th>Status</th>
+                              <th class="text-center">Ações</th>
+                        </tr>
+                  </thead>
+                  <tbody>
+                        @foreach (var nota in notas)
+                        {
+                              <tr class="@(nota.Status == StatusNfse.Cancelada ? "table-secondary text-muted" : "")">
+                                    <td class="text-center">
+                                          <input type="checkbox" checked="@notasSelecionadas.Contains(nota.Id)"
+                                                 @onchange="@(e => ToggleNota(nota.Id))" />
+                                    </td>
+                                    <td class="fw-bold">@nota.RpsNumero</td>
+                                    <td>@nota.NumeroNota</td>
+                                    <td>@MGMFormatador.FormatarCnpj(nota.CnpjTomador) @* Aqui no futuro buscaremos o Nome do Cliente *@</td>
+                                    <td>@MGMFormatador.ParaHoraLocal(nota.DataEmissao)</td>
+                                    <td class="text-end">@nota.Valor.ToString("C2")</td>
+                                    <td class="text-center">
+                                          <span class="badge @GetBadgeClass(nota.Status)">@nota.Status</span>
+                                    </td>
+                                    @* COLUNA DE AÇÕES *@
+                                    <td class="text-center">
+                                          <div class="d-flex justify-content-center gap-1">
+                                                <button class="btn btn-xs btn-outline-primary"
+                                                        title="Consultar/Atualizar na Prefeitura"
+                                                        @onclick="() => AtualizarUmaNota(nota)">
+                                                      <i class="bi bi-arrow-repeat"></i>
+                                                </button>
+
+                                                <a href="@GerarLinkPdf(nota)" target="_blank"
+                                                         class="btn btn-xs btn-outline-dark" title="Visualizar PDF">
+                                                      <i class="bi bi-file-earmark-pdf"></i>
+                                                </a>
+
+                                                @* BOTÃO CANCELAR: Só aparece para Admin e Fiscal *@
+                                                <AuthorizeView Roles="Admin,Fiscal">
+                                                      <button class="btn btn-xs btn-outline-danger"
+                                                              title="Cancelar Nota Fiscal"
+                                                              @onclick="() => SolicitarCancelamento(nota)">
+                                                            <i class="bi bi-x-circle"></i>
+                                                      </button>
+                                                </AuthorizeView>
+                                          </div>
+                                    </td>
+                              </tr>
+                        }
+                  </tbody>
+            </table>
+      </div>
+</div>
+
+@* CSS LOCAL PARA DEIXAR APERTADO IGUAL EXCEL *@
+<style>
+      .border-left-mgm {
+            border-left: 5px solid #76b82a;
+      }
+
+      .table-sm td,
+      .table-sm th {
+            padding: 0.2rem 0.5rem !important;
+            font-size: 0.85rem;
+            vertical-align: middle;
+      }
+
+      .btn-xs {
+            padding: 0.1rem 0.3rem;
+            font-size: 0.75rem;
+      }
+
+      .action-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border-radius: 6px;
+      }
+
+      .action-btn i {
+            font-size: 1.1rem;
+      }
+</style>
+
+@code {
+      private List<NotaFiscalEmitida> notas = new();
+      private HashSet<int> notasSelecionadas = new();
+      private DateTime dataInicio = DateTime.Today.AddDays(-30);
+      private DateTime dataFim = DateTime.Today;
+
+      protected override async Task OnInitializedAsync() => await CarregarNotas();
+
+      private async Task CarregarNotas()
+      {
+            notas = await DbContext.NotasFiscaisEmitidas
+                .Where(n => n.DataEmissao >= dataInicio && n.DataEmissao <= dataFim.AddDays(1))
+                .OrderByDescending(n => n.Id)
+                .ToListAsync();
+      }
+
+      private void ToggleNota(int id)
+      {
+            if (notasSelecionadas.Contains(id)) notasSelecionadas.Remove(id);
+            else notasSelecionadas.Add(id);
+      }
+
+      private void ToggleTodos(ChangeEventArgs e)
+      {
+            if ((bool)e.Value!) notasSelecionadas = new HashSet<int>(notas.Select(n => n.Id));
+            else notasSelecionadas.Clear();
+      }
+
+      private async Task AtualizarUmaNota(NotaFiscalEmitida nota)
+      {
+            await NfseService.VerificarSeRpsJaExisteNaPrefeitura(nota.RpsNumero);
+            await CarregarNotas();
+      }
+
+      private async Task AtualizarSelecionadas()
+      {
+            foreach (var id in notasSelecionadas)
+            {
+                  var nota = notas.First(n => n.Id == id);
+                  await NfseService.VerificarSeRpsJaExisteNaPrefeitura(nota.RpsNumero);
+            }
+            notasSelecionadas.Clear();
+            await CarregarNotas();
+      }
+
+      private string GetBadgeClass(StatusNfse status) => status switch
+      {
+            StatusNfse.Faturada => "bg-success",
+            StatusNfse.Cancelada => "bg-danger",
+            _ => "bg-warning"
+      };
+
+      private string GerarLinkPdf(NotaFiscalEmitida nota) =>
+          NfseService.GerarLinkConsultaPublica(nota.NumeroNota ?? "", nota.CodigoVerificacao ?? "");
+
+      private async Task SolicitarCancelamento(NotaFiscalEmitida nota)
+      {
+            // Usa o confirmação nativa do navegador
+            bool confirmou = await JS.InvokeAsync<bool>("confirm",
+                  $"ATENÇÃO: Deseja realmente CANCELAR a Nota Fiscal {nota.NumeroNota}?\nEsta ação é irreversível na prefeitura.");
+
+            if (confirmou)
+            {
+                  var result = await NfseService.CancelarNotaAsync(nota.NumeroNota!, "1");
+
+                  if (result.Sucesso)
+                  {
+                        await CarregarNotas(); // Recarrega o grid
+                  }
+                  else
+                  {
+                        // Se der erro, mostra o motivo que a prefeitura mandou
+                        await JS.InvokeVoidAsync("alert", $"Falha ao cancelar: {string.Join(", ", result.Erros)}");
+                  }
+            }
+      }
+
+      private void AbrirModalNovaNota() { /* Lógica para abrir modal amanhã */ }
+}

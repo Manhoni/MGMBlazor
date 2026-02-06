@@ -66,6 +66,14 @@ public class NfseService : INfseService
         return $"https://maringa.fintel.com.br/ImprimirNfse/{numeroNota}/{cnpjPrestador}/{codigoVerificacao}";
     }
 
+    public async Task<List<NotaFiscalEmitida>> ListarNotasAsync(DateTime inicio, DateTime fim)
+    {
+        return await _context.NotasFiscaisEmitidas
+            .Where(n => n.DataEmissao >= inicio && n.DataEmissao <= fim)
+            .OrderByDescending(n => n.DataEmissao)
+            .ToListAsync();
+    }
+
     public async Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero)
     {
         Console.WriteLine($"[CONSULTA] Verificando RPS {rpsNumero}...");
@@ -201,6 +209,8 @@ public class NfseService : INfseService
         {
             RpsNumero = nota.Id, // Grava o número do RPS que acabamos de usar
             VendaId = 100, // tanto faz a empresa que escolhe (preciso acertar a logica para que ela seja inserida pelo usuario e volte pelo Response)
+            Valor = nota.Valor,
+            CnpjTomador = nota.Tomador.Cnpj,
             DataEmissao = DateTime.UtcNow,
             NumeroNota = resposta.NumeroNota,
             CodigoVerificacao = resposta.CodigoVerificacao,
