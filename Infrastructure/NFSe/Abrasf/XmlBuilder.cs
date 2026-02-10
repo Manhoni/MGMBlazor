@@ -59,10 +59,31 @@ public class AbrasfXmlBuilder
                     )
                 ),
                 new XElement(Ns + "RazaoSocial", nota.Tomador.RazaoSocial),
+                new XElement(Ns + "Endereco",
+                    new XElement(Ns + "Endereco", nota.Tomador.Endereco),
+                    new XElement(Ns + "Numero", nota.Tomador.Numero),
+                    new XElement(Ns + "Bairro", nota.Tomador.Bairro),
+                    new XElement(Ns + "CodigoMunicipio", nota.Tomador.MunicipioCodigoIbge),
+                    new XElement(Ns + "Uf", nota.Tomador.Uf),
+                    new XElement(Ns + "CodigoPais", "1058"),
+                    new XElement(Ns + "Cep", nota.Tomador.Cep)
+                ),
                 new XElement(Ns + "Contato",
                     new XElement(Ns + "Email", nota.Tomador.Email)
                 )
             ),
+
+            // <Endereco>
+            // <Endereco>XV DE NOVEMBRO</Endereco>
+            // <Numero>701</Numero>
+            // <Complemento>PRIMEIRO ANDAR</Complemento>
+            // <Bairro>CENTRO</Bairro>
+            // <CodigoMunicipio>4115200</CodigoMunicipio>
+            // <Uf>PR</Uf>
+            // <CodigoPais>1058</CodigoPais>
+            // <Cep>87013230</Cep>
+            // </Endereco>
+
             new XElement(Ns + "OptanteSimplesNacional", 1),
             new XElement(Ns + "IncentivoFiscal", 2)
         );

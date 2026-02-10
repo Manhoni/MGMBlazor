@@ -7,136 +7,85 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
-# Senhas, certificados, chaves privadas
-appsettings.Production.json
-appsettings.Development.json
+## --- RESULTADOS DE COMPILAÇÃO E PUBLICAÇÃO (.NET) ---
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+publish/
+x64/
+x86/
+bld/
+artifacts/
+[Ll]og/
+[Ll]ogs/
+*.binlog
+
+## --- CONFIGURAÇÕES SENSÍVEIS (NUNCA VERSIONAR) ---
+# Ignora arquivos de configuração que contêm senhas de banco e produção
 appsettings.json
+appsettings.*.json
+secrets.json
+.env
+.env.*
+server_config.json
+local_settings.json
+
+## --- CERTIFICADOS E CHAVES (SEGURANÇA MÁXIMA) ---
+# Bloqueia as extensões em qualquer lugar do projeto
 *.pfx
 *.p12
 *.pem
 *.key
-secrets.json
-.env
-.env.local
-.env.production
-
-# Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Ww][Ii][Nn]32/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Bb]in/
-[Oo]bj/
-[Ll]og/
-[Ll]ogs/
-
-# Certificados SSL/TLS
 *.cer
 *.crt
 *.der
 
-# .NET Core
-project.lock.json
-project.fragment.lock.json
-artifacts/
+## --- EXCEÇÃO PARA INFRAESTRUTURA DE CERTIFICADOS ---
+# Permitimos que a estrutura da pasta suba para o Git para que o seu 
+# 'CertificateProviderExemplo.cs' seja rastreado, mas os arquivos acima (*.pfx, etc)
+# continuarão bloqueados mesmo se estiverem dentro desta pasta.
+!Infrastructure/NFSe/Abrasf/Certificates/
+!Infrastructure/NFSe/Abrasf/Certificates/*.cs
 
-## NuGet ##
-*.nupkg
-*.snupkg
-**/packages/*
-!**/packages/build/
-*.nuget.props
-*.nuget.targets
-project.lock.json
-project.fragment.lock.json
+## --- ARQUIVOS TEMPORÁRIOS DE TESTE E LOGS DO PROJETO ---
+nfse_teste.xml
+nfse_antes_assinatura.xml
+nfse_depois_assinatura.xml
+nota_assinada.xml
+CONTEUDO_PARA_POSTMAN.txt
+BoletoRequest.json
+BoletoResponse.json
+TestResult.xml
+[Tt]est[Rr]esult*/
 
-## Entity Framework ##
-*.mdf
-*.ldf
-*.ndf
-
-## Visual Studio Code ##
-.vscode/
+## --- VISUAL STUDIO CODE ---
+.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+*.code-workspace
 
-# ASP.NET Scaffolding
-ScaffoldingReadMe.txt
+## --- FERRAMENTAS E GERENCIADORES (NUGET / EF) ---
+.nuget/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+*.nuget.props
+*.nuget.targets
+# Bancos de dados locais (SQLite/SQLServer local)
+*.mdf
+*.ldf
+*.ndf
+*.db
+*.db-shm
+*.db-wal
 
-# Linux
+## --- SISTEMA OPERACIONAL (LINUX / WINDOWS) ---
+.DS_Store
+Thumbs.db
 *~
 .directory
-
-# Others
-~$*
-*~
-CodeCoverage/
-
-# MSBuild Binary and Structured Log
-*.binlog
-
-# MSTest test Results
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
-
-# NUnit
-*.VisualState.xml
-TestResult.xml
-nunit-*.xml
-
-# Específico do Projeto ##
-# Certificados da empresa
-certificates/
-Infrastructure/NFSe/Abrasf/Certificates
-nfse_teste.xml
-nota_assinada.xml
-CONTEUDO_PARA_POSTMAN.txt
-empresa_cert.pfx
-
-# Bancario
-BoletoRequest.json
-BoletoResponse.json
-
-# ===================================
-# CERTIFICADOS - NUNCA VERSIONAR!
-# ===================================
-
-# Pasta inteira de certificados (qualquer lugar no projeto)
-**/certificates/
-**/Certificates/
-
-# Caminho específico
-Infrastructure/NFSe/Abrasf/Certificates/
-
-# Extensões de certificados
-*.pfx
-*.p12
-*.pem
-*.key
-*.cer
-*.crt
-*.der
-
-# Arquivos específicos
-nfse_teste.xml
-empresa_cert.pfx
-
-# Outros arquivos sensíveis
-appsettings.Development.json
-appsettings.Production.json
-appsettings.json
-secrets.json
-.env
-.env.local
-
-# Configurações locais do servidor
-server_config.json
-local_settings.json
+.fuse_hidden*
+.trash/

@@ -7,9 +7,10 @@ public class Cliente
     public string Cnpj { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Endereco { get; set; } = string.Empty;
+    public string Numero { get; set; } = string.Empty;
     public string Bairro { get; set; } = string.Empty;
     public string Cidade { get; set; } = string.Empty;
-    public string Uf { get; set; } = string.Empty; // PR, SP, etc.
+    public string Uf { get; set; } = string.Empty;
     public string Cep { get; set; } = string.Empty;
-    public string MunicipioCodigoIbge { get; set; } = "4115200"; // Código IBGE para Maringá, PR
+    public string MunicipioCodigoIbge { get; set; } = string.Empty; // 4115200 Código IBGE para Maringá, PR
 }

@@ -336,6 +336,7 @@ using MGMBlazor.Domain.Entities;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using MGMBlazor.Infrastructure.Security;
+using MGMBlazor.Services.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -412,6 +413,8 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 builder.Services.AddHttpClient<INfseService, NfseService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHttpClient<ISicoobService, SicoobService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHostedService<SicoobWorkerService>();
+
+builder.Services.AddHttpClient<CepService>();
 
 // Configura a cultura padrão para Português do Brasil
 var cultureInfo = new System.Globalization.CultureInfo("pt-BR");

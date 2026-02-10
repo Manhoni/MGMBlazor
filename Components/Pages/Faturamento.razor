@@ -1,7 +1,6 @@
 @page "/faturamento"
 @attribute [Authorize(Roles = "Admin,Fiscal")]
 @rendermode InteractiveServer
-@using MGMBlazor.Services.Import
 @inject NavigationManager Nav
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
@@ -9,6 +8,7 @@
 @inject AppDbContext DbContext
 @inject IJSRuntime JS
 @inject IConfiguration config
+@inject CepService CepService
 
 <div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <!-- Header MGM -->
@@ -77,8 +77,15 @@
                                           }
                                     </select>
                               </div>
-                              <div class="col-md-3 mb-3">
-                                    <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
+                              <div class="col-md-2 mb-3">
+                                    <label class="fw-bold small">CEP *</label>
+                                    <input type="text" class="form-control" @bind="cepBoleto" @oninput="OnCepChange"
+                                           maxlength="9" placeholder="00000-000" />
+                              </div>
+                              <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                          <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
+                                    </div>
                               </div>
                         </div>
 
@@ -143,6 +150,15 @@
                                           <input type="text" class="form-control shadow-sm" @bind="enderecoBoleto"
                                                  placeholder="Rua, Número, Bairro" />
                                     </div>
+                                    <div class="col-md-1 mb-3">
+                                          <label class="fw-bold small">Nº</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="numeroEndereco"
+                                                 maxlength="5" placeholder="00.00" />
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                          <label class="fw-bold small">BAIRRO</label>
+                                          <input type="text" class="form-control shadow-sm" @bind="bairroBoleto" />
+                                    </div>
                                     <div class="col-md-4 mb-3">
                                           <label class="fw-bold small">CIDADE</label>
                                           <input type="text" class="form-control shadow-sm" @bind="cidadeBoleto" />
@@ -151,11 +167,8 @@
                                           <label class="fw-bold small">UF</label>
                                           <input type="text" class="form-control shadow-sm" @bind="ufBoleto" maxlength="2" />
                                     </div>
-                                    <div class="col-md-2 mb-3">
-                                          <label class="fw-bold small">CEP (somente números)</label>
-                                          <input type="text" class="form-control shadow-sm" @bind="cepBoleto" maxlength="8" />
-                                    </div>
                               </div>
+
                               <div class="col-md-3 mb-3">
                                     <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
                               </div>
@@ -200,9 +213,12 @@
       private int numeroParcela = 1;
       private string seuNumero = "";
       private string enderecoBoleto = "";
+      private string numeroEndereco = "0";
+      private string bairroBoleto = "";
       private string cidadeBoleto = "Maringa";
       private string ufBoleto = "PR";
       private string cepBoleto = "";
+      private string ibgeNota = "";
       private string statusTeste = "Aguardando importação de CSV...";
 
       protected override async Task OnInitializedAsync()
@@ -225,18 +241,14 @@
 
                   if (clienteExistente != null)
                   {
-                        enderecoBoleto = clienteExistente.Endereco;
                         cepBoleto = clienteExistente.Cep;
-                        cidadeBoleto = clienteExistente.Cidade;
-                        ufBoleto = clienteExistente.Uf;
-                  }
+                        numeroEndereco = clienteExistente.Numero;
+                  } 
             }
             catch (Exception ex)
             {
                   statusTeste = "❌ Erro ao ler CSV: " + ex.Message;
             }
-
-
       }
 
       private async Task GerarFaturamento()
@@ -270,6 +282,8 @@
                   statusTeste = $"Emitindo Nota Fiscal para RPS {rpsCandidato}...";
                   var servico = servicos.First(s => s.Id == servicoSelecionadoId);
 
+                  var cepLimpo = new string(cepBoleto.Where(char.IsDigit).ToArray());
+
                   var nota = new NotaFiscal
                   {
                         Id = rpsCandidato,
@@ -279,7 +293,12 @@
                               RazaoSocial = resumo.NomeCliente,
                               Cnpj = resumo.CnpjCpf,
                               Email = emailCliente,
-                              MunicipioCodigoIbge = "4115200"
+                              Endereco = enderecoBoleto,
+                              Numero = numeroEndereco,
+                              Bairro = bairroBoleto,
+                              MunicipioCodigoIbge = ibgeNota,
+                              Uf = ufBoleto,
+                              Cep = cepLimpo
                         },
                         Servico = servico
                   };
@@ -302,6 +321,32 @@
                   statusTeste = "💥 Erro crítico: " + ex.Message;
             }
             finally { processando = false; }
+      }
+
+      private async Task OnCepChange(ChangeEventArgs e)
+      {
+            var valor = e.Value?.ToString() ?? "";
+            cepBoleto = MGMFormatador.FormatarCep(valor); // Aplica máscara se quiser
+
+            var numeros = new string(valor.Where(char.IsDigit).ToArray());
+
+            if (numeros.Length == 8)
+            {
+                  var result = await CepService.BuscarEnderecoAsync(numeros);
+                  if (result != null && result.Erro != true)
+                  {
+                        // Dados para o Boleto (Visual)
+                        enderecoBoleto = result.Logradouro;
+                        bairroBoleto = result.Bairro;
+                        cidadeBoleto = result.Localidade;
+                        ufBoleto = result.Uf;
+
+                        // DADO PARA A NOTA (Oculto ou fixo na classe NotaFiscal)
+                        ibgeNota = result.Ibge;
+
+                        statusTeste = $"✅ Endereço de {result.Localidade}\n {result.Logradouro}\n {result.Bairro}\n {result.Uf}\n {result.Ibge} carregado.";
+                  }
+            }
       }
 
       private async Task GerarBoletoAgora()
