@@ -71,21 +71,20 @@
                                     @* COLUNA DE AÇÕES *@
                                     <td class="text-center">
                                           <div class="d-flex justify-content-center gap-1">
-                                                <button class="btn btn-xs btn-outline-primary"
-                                                        title="Consultar/Atualizar na Prefeitura"
+                                                <button class="btn btn-xs btn-primary"
+                                                        title=" Consultar/Atualizar na Prefeitura"
                                                         @onclick="() => AtualizarUmaNota(nota)">
                                                       <i class="bi bi-arrow-repeat"></i>
                                                 </button>
 
                                                 <a href="@GerarLinkPdf(nota)" target="_blank"
-                                                         class="btn btn-xs btn-outline-dark" title="Visualizar PDF">
-                                                      <i class="bi bi-file-earmark-pdf"></i>
+                                                         class="btn btn-xs btn-secondary" title="Visualizar PDF">
+                                                      <i class="bi bi-file-pdf"></i>
                                                 </a>
 
                                                 @* BOTÃO CANCELAR: Só aparece para Admin e Fiscal *@
                                                 <AuthorizeView Roles="Admin,Fiscal">
-                                                      <button class="btn btn-xs btn-outline-danger"
-                                                              title="Cancelar Nota Fiscal"
+                                                      <button class="btn btn-xs btn-danger" title="Cancelar Nota Fiscal"
                                                               @onclick="() => SolicitarCancelamento(nota)">
                                                             <i class="bi bi-x-circle"></i>
                                                       </button>

@@ -411,6 +411,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSe
 
 builder.Services.AddHttpClient<INfseService, NfseService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHttpClient<ISicoobService, SicoobService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
+builder.Services.AddHostedService<SicoobWorkerService>();
 
 // Configura a cultura padrão para Português do Brasil
 var cultureInfo = new System.Globalization.CultureInfo("pt-BR");

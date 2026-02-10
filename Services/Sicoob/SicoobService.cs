@@ -92,6 +92,15 @@ public class SicoobService : ISicoobService
         _httpClient.DefaultRequestHeaders.Add("client_id", GetClientId());
     }
 
+    public async Task<List<Cobranca>> ListarCobrancasAsync(DateTime inicio, DateTime fim)
+    {
+        return await _dbContext.Cobrancas
+            .Include(c => c.NotaFiscalEmitida) // Traz os dados da nota vinculada
+            .Where(c => c.DataCadastro >= inicio && c.DataCadastro <= fim.AddDays(1))
+            .OrderByDescending(c => c.Id)
+            .ToListAsync();
+    }
+
     // --- MÉTODOS DE AÇÃO (INCLUIR, CONSULTAR, BAIXAR) ---
 
     public async Task<BoletoResponse?> IncluirBoletoAsync(int notaFiscalEmitidaDbId, BoletoRequest request)

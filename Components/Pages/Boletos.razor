@@ -1,0 +1,219 @@
+@page "/boletos"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using MGMBlazor.Infrastructure.Helpers
+@inject ISicoobService SicoobService
+@inject AppDbContext DbContext
+@inject IJSRuntime JS
+
+<div class="container-fluid mt-3">
+      <!-- CABEÇALHO -->
+      <div
+            class="d-flex justify-content-between align-items-center mb-3 p-2 shadow-sm rounded bg-white border-left-mgm">
+            <h4 class="m-0 fw-bold text-dark">💵 Gestão de Boletos</h4>
+            <button class="btn btn-sm btn-success" @onclick='() => Nav.NavigateTo("/boletos/novo")'>
+                  <span class="bi bi-plus-circle"></span> Boleto Avulso
+            </button>
+      </div>
+
+      <!-- FILTROS -->
+      <div class="card p-2 mb-3 shadow-sm border-0 bg-light">
+            <div class="row align-items-end g-2">
+                  <div class="col-md-2">
+                        <label class="small fw-bold">DATA INICIAL</label>
+                        <input type="date" class="form-control form-control-sm" @bind="dataInicio" />
+                  </div>
+                  <div class="col-md-2">
+                        <label class="small fw-bold">DATA FINAL</label>
+                        <input type="date" class="form-control form-control-sm" @bind="dataFim" />
+                  </div>
+                  <div class="col-md-2">
+                        <button class="btn btn-sm btn-dark w-100" @onclick="CarregarBoletos">
+                              <i class="bi bi-search"></i> Filtrar
+                        </button>
+                  </div>
+            </div>
+      </div>
+
+      <!-- GRID ESTILO EXCEL -->
+      <div class="table-responsive shadow-sm rounded">
+            <table class="table table-sm table-hover table-bordered bg-white m-0">
+                  <thead class="bg-dark text-white">
+                        <tr>
+                              <th>Nosso Número</th>
+                              <th>Nota Fiscal</th>
+                              <th>Vencimento</th>
+                              <th>Valor (R$)</th>
+                              <th>Status</th>
+                              <th class="text-center">Ações</th>
+                        </tr>
+                  </thead>
+                  <tbody>
+                        @if (!cobrancas.Any())
+                        {
+                              <tr>
+                                    <td colspan="6" class="text-center p-3 text-muted">Nenhum boleto encontrado no período.
+                                    </td>
+                              </tr>
+                        }
+                        @foreach (var cob in cobrancas)
+                        {
+                              <tr class="@(cob.Status == "Baixado" ? "table-secondary text-muted" : "")">
+                                    <td class="fw-bold">@cob.NossoNumero</td>
+                                    <td>
+                                          @if (cob.NotaFiscalEmitida != null)
+                                          {
+                                                <span>NF @cob.NotaFiscalEmitida.NumeroNota</span>
+                                          }
+                                          else
+                                          {
+
+                                                <span class="badge bg-light text-dark border">Avulso</span>
+                                          }
+                                    </td>
+                                    <td class="text-center">@cob.DataVencimento.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-end fw-bold">@MGMFormatador.FormatarMoeda(cob.Valor)</td>
+                                    <td class="text-center">
+                                          <span class="badge @GetStatusClass(cob)">@GetStatusTexto(cob)</span>
+                                    </td>
+                                    <td class="text-center">
+                                          <div class="d-flex justify-content-center gap-1">
+                                                @* SINCRONIZAR *@
+                                                <button class="btn btn-xs btn-primary" title="Sincronizar com Banco"
+                                                        @onclick="() => SincronizarBoleto(cob)">
+                                                      <i class="bi bi-arrow-repeat"></i>
+                                                </button>
+
+                                                @* VER PDF *@
+                                                <button class="tn btn-xs btn-secondary" title="Abrir PDF"
+                                                        @onclick="() => AbrirPdf(cob)">
+                                                      <i class="bi bi-file-pdf"></i>
+                                                </button>
+
+                                                @* BAIXAR/CANCELAR *@
+                                                <AuthorizeView Roles="Admin,Fiscal">
+                                                      <button class="btn btn-xs btn-danger" title="BAIXAR BOLETO"
+                                                              @onclick="() => SolicitarBaixa(cob)">
+                                                            <i class="bi bi-trash3"></i>
+                                                      </button>
+                                                </AuthorizeView>
+                                          </div>
+                                    </td>
+                              </tr>
+                        }
+                  </tbody>
+            </table>
+      </div>
+</div>
+
+<style>
+      .border-left-mgm {
+            border-left: 5px solid #76b82a;
+      }
+
+      .table-sm td,
+      .table-sm th {
+            padding: 0.2rem 0.5rem !important;
+            font-size: 0.85rem;
+            vertical-align: middle;
+      }
+
+      .btn-xs {
+            padding: 0.1rem 0.3rem;
+            font-size: 0.75rem;
+      }
+
+      .action-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border-radius: 6px;
+      }
+
+      .action-btn i {
+            font-size: 1.1rem;
+      }
+</style>
+
+@code {
+      [Inject] NavigationManager Nav { get; set; } = default!;
+      private List<Cobranca> cobrancas = new();
+      private DateTime dataInicio = DateTime.Today.AddDays(-30);
+      private DateTime dataFim = DateTime.Today;
+
+      protected override async Task OnInitializedAsync() => await CarregarBoletos();
+
+      private async Task CarregarBoletos()
+      {
+            cobrancas = await DbContext.Cobrancas
+                .Include(c => c.NotaFiscalEmitida)
+                .Where(c => c.DataCadastro >= dataInicio && c.DataCadastro <= dataFim.AddDays(1))
+                .OrderByDescending(c => c.Id)
+                .ToListAsync();
+      }
+
+      private async Task SincronizarBoleto(Cobranca cob)
+      {
+            var result = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
+            if (result?.Resultado != null)
+            {
+                  cob.Status = result.Resultado.SituacaoBoleto ?? "Pendente";
+                  DbContext.Cobrancas.Update(cob);
+                  await DbContext.SaveChangesAsync();
+                  await CarregarBoletos();
+            }
+      }
+
+      private async Task AbrirPdf(Cobranca cob)
+      {
+            // Se já temos o base64 no banco, usamos ele
+            if (!string.IsNullOrEmpty(cob.PdfBase64))
+            {
+                  await JS.InvokeVoidAsync("window.abrirPdfNoNavegador", cob.PdfBase64);
+            }
+            else
+            {
+                  // Se não tem no banco, busca na API na hora
+                  var resp = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
+                  if (!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto))
+                        await JS.InvokeVoidAsync("window.abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+            }
+      }
+
+      private async Task SolicitarBaixa(Cobranca cob)
+      {
+            bool confirm = await JS.InvokeAsync<bool>("confirm", $"Deseja baixar (cancelar) o boleto {cob.NossoNumero}?");
+            if (confirm)
+            {
+                  var ok = await SicoobService.BaixarBoletoAsync(cob.NossoNumero);
+                  if (ok) await CarregarBoletos();
+                  else await JS.InvokeVoidAsync("alert", "Falha ao realizar a baixa no Sicoob.");
+            }
+      }
+
+      private string GetStatusClass(Cobranca cob)
+      {
+            if (cob.Status == "Liquidado" || cob.Status == "Pago") return "bg-success";
+            if (cob.Status == "Baixado") return "bg-danger";
+
+            // Se está pendente mas a data de vencimento já passou
+            if (cob.Status == "Pendente" && cob.DataVencimento.Date < DateTime.Today)
+            {
+                  return "bg-danger"; // Vermelho para atrasado
+            }
+
+            return "bg-warning text-dark"; // Amarelo para pendente no prazo
+      }
+
+      // Para exibir o texto "Atrasado" em vez de "Pendente"
+      private string GetStatusTexto(Cobranca cob)
+      {
+            if (cob.Status == "Pendente" && cob.DataVencimento.Date < DateTime.Today)
+                  return "Atrasado";
+
+            return cob.Status;
+      }
+}

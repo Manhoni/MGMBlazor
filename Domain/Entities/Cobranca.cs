@@ -25,6 +25,7 @@ public class Cobranca
 
     public string? QrCodePix { get; set; }
     public string? PdfBase64 { get; set; }
+    public string JsonRetorno { get; set; } = string.Empty;
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal Valor { get; set; }

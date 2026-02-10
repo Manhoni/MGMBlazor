@@ -4,6 +4,11 @@ namespace MGMBlazor.Infrastructure.Helpers;
 
 public static class MGMFormatador
 {
+      public static string FormatarMoeda(decimal valor)
+      {
+            return valor.ToString("C2", new CultureInfo("pt-BR"));
+      }
+
       // Formata CNPJ: 00.000.000/0000-00
       public static string FormatarCnpj(string? cnpj)
       {

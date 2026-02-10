@@ -17,7 +17,7 @@ public class BoletoRequest
     public string CodigoEspecieDocumento { get; set; } = "DM";
 
     [JsonPropertyName("dataEmissao")]
-    public string DataEmissao { get; set; } = "2018-09-20"; // DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00")
+    public string DataEmissao { get; set; } = DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00");
 
     [JsonPropertyName("seuNumero")]
     public string SeuNumero { get; set; } = string.Empty;

@@ -196,7 +196,7 @@
       private bool boletoGerado = false;
       private RespostaEmissao? respostaNfse;
       private string? linkNota;
-      private DateTime dataVencimentoBoleto = DateTime.Today.AddDays(7);
+      private DateTime dataVencimentoBoleto = DateTime.Today.AddDays(15);
       private int numeroParcela = 1;
       private string seuNumero = "";
       private string enderecoBoleto = "";
@@ -220,11 +220,23 @@
                   ms.Position = 0;
                   resumo = ImportService.ProcessarCsv(ms);
                   statusTeste = "✅ Fatura importada com sucesso!";
+
+                  var clienteExistente = await DbContext.Clientes.FirstOrDefaultAsync(c => c.Cnpj == resumo.CnpjCpf);
+
+                  if (clienteExistente != null)
+                  {
+                        enderecoBoleto = clienteExistente.Endereco;
+                        cepBoleto = clienteExistente.Cep;
+                        cidadeBoleto = clienteExistente.Cidade;
+                        ufBoleto = clienteExistente.Uf;
+                  }
             }
             catch (Exception ex)
             {
                   statusTeste = "❌ Erro ao ler CSV: " + ex.Message;
             }
+
+
       }
 
       private async Task GerarFaturamento()
@@ -311,6 +323,7 @@
                         Valor = resumo!.ValorTotal,
                         NumeroParcela = numeroParcela,
                         SeuNumero = "MGM-" + seuNumero,
+                        DataEmissao = usarSandbox ? "2018-09-20" : DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00"),
                         DataVencimento = usarSandbox ? "2018-09-20" : dataVencimentoBoleto.ToString("yyyy-MM-ddT00:00:00-03:00"),
                         Pagador = new PagadorRequest
                         {
