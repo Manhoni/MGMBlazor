@@ -47,6 +47,7 @@ local_settings.json
 # continuarão bloqueados mesmo se estiverem dentro desta pasta.
 !Infrastructure/NFSe/Abrasf/Certificates/
 !Infrastructure/NFSe/Abrasf/Certificates/*.cs
+!appsettings.Exemplo.json
 
 ## --- ARQUIVOS TEMPORÁRIOS DE TESTE E LOGS DO PROJETO ---
 nfse_teste.xml
