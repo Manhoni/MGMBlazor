@@ -3,7 +3,7 @@
 @attribute [Authorize]
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbFactory 
 @inject IJSRuntime JS
 
 <div class="container-fluid mt-3">
@@ -141,7 +141,8 @@
 
       private async Task CarregarNotas()
       {
-            notas = await DbContext.NotasFiscaisEmitidas
+            using var context = await DbFactory.CreateDbContextAsync();
+            notas = await context.NotasFiscaisEmitidas
                 .Where(n => n.DataEmissao >= dataInicio && n.DataEmissao <= dataFim.AddDays(1))
                 .OrderByDescending(n => n.Id)
                 .ToListAsync();

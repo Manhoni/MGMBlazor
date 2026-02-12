@@ -12,15 +12,15 @@ public class SicoobService : ISicoobService
 {
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _config;
-    private readonly AppDbContext _dbContext;
+    private readonly IDbContextFactory<AppDbContext> _factory;
     private string? _accessToken;
     private DateTime _tokenExpiration;
 
-    public SicoobService(HttpClient httpClient, IConfiguration config, AppDbContext dbContext)
+    public SicoobService(HttpClient httpClient, IConfiguration config, IDbContextFactory<AppDbContext> factory)
     {
         _httpClient = httpClient;
         _config = config;
-        _dbContext = dbContext;
+        _factory = factory;
     }
 
     // --- MÉTODOS AUXILIARES DE AMBIENTE ---
@@ -94,6 +94,7 @@ public class SicoobService : ISicoobService
 
     public async Task<List<Cobranca>> ListarCobrancasAsync(DateTime inicio, DateTime fim)
     {
+        using var _dbContext = await _factory.CreateDbContextAsync();
         return await _dbContext.Cobrancas
             .Include(c => c.NotaFiscalEmitida) // Traz os dados da nota vinculada
             .Where(c => c.DataCadastro >= inicio && c.DataCadastro <= fim.AddDays(1))
@@ -140,6 +141,8 @@ public class SicoobService : ISicoobService
 
         if (boletoGerado?.Resultado != null)
         {
+            using var _dbContext = await _factory.CreateDbContextAsync();
+
             Console.WriteLine($"[DEBUG-SICOOB] Sucesso! Nosso Número: {boletoGerado.Resultado.NossoNumero}");
 
             // Tratamento de Data para o Postgres (Tryparse para não quebrar com string vazia)
@@ -210,6 +213,7 @@ public class SicoobService : ISicoobService
 
         if (response.IsSuccessStatusCode)
         {
+            using var _dbContext = await _factory.CreateDbContextAsync();
             var cobranca = await _dbContext.Cobrancas.FirstOrDefaultAsync(c => c.NossoNumero == nossoNumero);
             if (cobranca != null)
             {

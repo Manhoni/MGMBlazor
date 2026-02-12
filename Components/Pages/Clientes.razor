@@ -1,0 +1,228 @@
+@page "/clientes"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@inject IClienteService ClienteService
+@inject CepService CepService
+@inject NavigationManager Nav
+
+<PageTitle>Cadastro de Clientes</PageTitle>
+
+<div class="container mt-3">
+      <div
+            class="d-flex justify-content-between align-items-center mb-3 p-2 shadow-sm rounded bg-white border-left-mgm">
+            <h4 class="m-0 fw-bold text-dark"><i class="bi bi-person-vcard"></i> Gestão de Clientes</h4>
+            <button class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-file-earmark-arrow-up"></i> Importar CSV
+            </button>
+      </div>
+
+      <!-- Seção de Busca -->
+      <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                  <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                              <label class="form-label">CNPJ do Cliente</label>
+                              <input type="text" class="form-control" value="@MGMFormatador.FormatarCnpj(cnpjBusca)"
+                                     @oninput="@(e => cnpjBusca = e.Value?.ToString() ?? "")"
+                                     placeholder="00.000.000/0000-00" maxlength="18" />
+                        </div>
+                        <div class="col-md-auto">
+                              <button class="btn btn-primary" @onclick="Buscar">
+                                    <i class="bi bi-search"></i> Buscar
+                              </button>
+                              <button class="btn btn-success ms-2" @onclick="NovoCliente">
+                                    <i class="bi bi-person-plus-fill"></i> Cadastrar Cliente
+                              </button>
+                        </div>
+                  </div>
+            </div>
+      </div>
+
+      @if (exibirFormulario)
+      {
+            <EditForm Model="cliente" OnValidSubmit="HandleSubmit" FormName="ClienteForm">
+                  <DataAnnotationsValidator />
+
+                  <div class="card shadow">
+                        <div class="card-header bg-light">
+                              <h5 class="mb-0 text-primary">
+                                    @(isEditMode ? "Editar Cadastro" : "Novo Cadastro")
+                              </h5>
+                        </div>
+                        <div class="card-body">
+                              <ValidationSummary class="text-danger small" />
+                              <div class="row g-3">
+                                    <div class="col-md-4">
+                                          <label class="form-label">CNPJ *</label>
+                                          <input type="text" class="form-control"
+                                                 value="@MGMFormatador.FormatarCnpj(cliente.Cnpj)" maxlength="18"
+                                                 @oninput="@(e => cliente.Cnpj = e.Value?.ToString() ?? "")"
+                                                 placeholder="00.000.000/0000-00" />
+                                    </div>
+                                    <div class="col-md-8">
+                                          <label class="form-label">Razão Social *</label>
+                                          <InputText class="form-control" @bind-Value="cliente.RazaoSocial" />
+                                    </div>
+                                    <div class="col-md-4">
+                                          <label class="form-label">E-mail *</label>
+                                          <InputText class="form-control" @bind-Value="cliente.Email" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                          <label class="form-label">CEP *</label>
+                                          <input type="text" class="form-control"
+                                                 value="@MGMFormatador.FormatarCep(cliente.Cep)" @oninput="OnCepInput"
+                                                 maxlength="9" placeholder="00000-000" />
+                                    </div>
+                                    <div class="col-md-7">
+                                          <label class="form-label">Endereço</label>
+                                          <InputText class="form-control" @bind-Value="cliente.Endereco" />
+                                    </div>
+                                    <div class="col-md-2">
+                                          <label class="form-label">Nº</label>
+                                          <InputText class="form-control" @bind-Value="cliente.Numero" />
+                                    </div>
+
+                                    <div class="col-md-4">
+                                          <label class="form-label">Bairro</label>
+                                          <InputText class="form-control" @bind-Value="cliente.Bairro" />
+                                    </div>
+                                    <div class="col-md-4">
+                                          <label class="form-label">Cidade</label>
+                                          <InputText class="form-control" @bind-Value="cliente.Cidade" />
+                                    </div>
+                                    <div class="col-md-4">
+                                          <label class="form-label">UF</label>
+                                          <InputText class="form-control" @bind-Value="cliente.Uf" />
+                                    </div>
+                                    <div class="row">
+                                          <div class="col-md-3 mb-3">
+                                                <label class="fw-0 small text-muted">* Campos Obrigatórios</label>
+                                          </div>
+                                    </div>
+                              </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end gap-2">
+                              <button type="button" class="btn btn-light" @onclick="Cancelar">Cancelar</button>
+                              <button type="submit" class="btn @(isEditMode ? "btn-warning" : "btn-success")">
+                                    <i class="bi bi-check-circle"></i> @(isEditMode ? "Salvar Alterações" : "Concluir                              Cadastro")
+                              </button>
+                        </div>
+                  </div>
+            </EditForm>
+      }
+
+      @if (!string.IsNullOrEmpty(mensagem))
+      {
+            <div class="alert @(mensagem.Contains("Erro") ? "alert-danger" : "alert-info") mt-3 shadow-sm">
+                  @mensagem
+            </div>
+      }
+</div>
+
+<style>
+      .border-left-mgm {
+            border-left: 5px solid #76b82a;
+      }
+
+      .table-sm td,
+      .table-sm th {
+            padding: 0.2rem 0.5rem !important;
+            font-size: 0.85rem;
+            vertical-align: middle;
+      }
+</style>
+
+@code {
+      private string cnpjBusca = "";
+      private string cnpjLimpo = "";
+      private string mensagem = "";
+      private bool exibirFormulario = false;
+      private bool isEditMode = false;
+      private Cliente cliente = new();
+
+      private async Task Buscar()
+      {
+            if (string.IsNullOrWhiteSpace(cnpjBusca)) return;
+
+            cnpjLimpo = new string(cnpjBusca.Where(char.IsDigit).ToArray());
+
+            var resultado = await ClienteService.BuscarPorCnpjAsync(cnpjLimpo);
+            if (resultado != null)
+            {
+                  cliente = resultado;
+                  isEditMode = true;
+                  exibirFormulario = true;
+                  mensagem = "Cliente encontrado!";
+            }
+            else
+            {
+                  mensagem = "CNPJ não encontrado no banco de dados.";
+                  exibirFormulario = false;
+            }
+      }
+
+      private void NovoCliente()
+      {
+            cliente = new Cliente { Cnpj = cnpjBusca };
+            isEditMode = false;
+            exibirFormulario = true;
+            mensagem = "";
+      }
+
+      private async Task OnCepInput(ChangeEventArgs e)
+      {
+            var valor = e.Value?.ToString() ?? "";
+            cliente.Cep = MGMFormatador.FormatarCep(valor); // Bind manual para poder disparar a lógica
+
+            var numeros = new string(valor.Where(char.IsDigit).ToArray());
+
+            if (numeros.Length == 8)
+            {
+                  var result = await CepService.BuscarEnderecoAsync(numeros);
+                  if (result != null && result.Erro != true)
+                  {
+                        cliente.Endereco = result.Logradouro;
+                        cliente.Bairro = result.Bairro;
+                        cliente.Cidade = result.Localidade;
+                        cliente.Uf = result.Uf;
+                        cliente.MunicipioCodigoIbge = result.Ibge;
+
+                        mensagem = $"Endereço de {result.Localidade} carregado.";
+                  }
+            }
+      }
+
+      private async Task HandleSubmit()
+      {
+            try
+            {
+                  // Limpa o CEP e CNPJ para salvar apenas números (Boa prática para o XML da nota)
+                  cliente.Cep = new string(cliente.Cep.Where(char.IsDigit).ToArray());
+                  cliente.Cnpj = new string(cliente.Cnpj.Where(char.IsDigit).ToArray());
+
+                  // Padronização: Para Maringá sempre usamos o mesmo código IBGE
+                  //cliente.MunicipioCodigoIbge = "4115200";
+
+                  if (isEditMode)
+                        await ClienteService.AtualizarAsync(cliente);
+                  else
+                        await ClienteService.SalvarAsync(cliente);
+
+                  mensagem = "✅ Cliente salvo com sucesso!";
+                  exibirFormulario = false;
+                  cnpjBusca = "";
+            }
+            catch (Exception ex)
+            {
+                  mensagem = "❌ Erro ao salvar: " + ex.Message;
+            }
+      }
+
+      private void Cancelar()
+      {
+            exibirFormulario = false;
+            mensagem = "";
+      }
+}

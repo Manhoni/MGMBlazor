@@ -41,7 +41,7 @@ public class AbrasfXmlBuilder
                 new XElement(Ns + "IssRetido", 2),
                 new XElement(Ns + "ItemListaServico", nota.Servico.CodigoMunicipal),
                 new XElement(Ns + "Discriminacao", nota.Servico.Descricao),
-                new XElement(Ns + "CodigoMunicipio", "4115200"),
+                new XElement(Ns + "CodigoMunicipio", _options.Prestador.CodigoMunicipio),
                 new XElement(Ns + "ExigibilidadeISS", 1)
             ),
 
@@ -72,17 +72,6 @@ public class AbrasfXmlBuilder
                     new XElement(Ns + "Email", nota.Tomador.Email)
                 )
             ),
-
-            // <Endereco>
-            // <Endereco>XV DE NOVEMBRO</Endereco>
-            // <Numero>701</Numero>
-            // <Complemento>PRIMEIRO ANDAR</Complemento>
-            // <Bairro>CENTRO</Bairro>
-            // <CodigoMunicipio>4115200</CodigoMunicipio>
-            // <Uf>PR</Uf>
-            // <CodigoPais>1058</CodigoPais>
-            // <Cep>87013230</Cep>
-            // </Endereco>
 
             new XElement(Ns + "OptanteSimplesNacional", 1),
             new XElement(Ns + "IncentivoFiscal", 2)

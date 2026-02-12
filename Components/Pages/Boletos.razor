@@ -3,7 +3,7 @@
 @attribute [Authorize]
 @using MGMBlazor.Infrastructure.Helpers
 @inject ISicoobService SicoobService
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbFactory
 @inject IJSRuntime JS
 
 <div class="container-fluid mt-3">
@@ -148,7 +148,8 @@
 
       private async Task CarregarBoletos()
       {
-            cobrancas = await DbContext.Cobrancas
+            using var context = await DbFactory.CreateDbContextAsync();
+            cobrancas = await context.Cobrancas
                 .Include(c => c.NotaFiscalEmitida)
                 .Where(c => c.DataCadastro >= dataInicio && c.DataCadastro <= dataFim.AddDays(1))
                 .OrderByDescending(c => c.Id)
@@ -160,9 +161,10 @@
             var result = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
             if (result?.Resultado != null)
             {
+                  using var context = await DbFactory.CreateDbContextAsync();
                   cob.Status = result.Resultado.SituacaoBoleto ?? "Pendente";
-                  DbContext.Cobrancas.Update(cob);
-                  await DbContext.SaveChangesAsync();
+                  context.Cobrancas.Update(cob);
+                  await context.SaveChangesAsync();
                   await CarregarBoletos();
             }
       }

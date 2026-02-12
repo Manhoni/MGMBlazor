@@ -13,7 +13,7 @@ namespace MGMBlazor.Services.Nfse;
 
 public class NfseService : INfseService
 {
-    private readonly AppDbContext _context;
+    private readonly IDbContextFactory<AppDbContext> _factory;
     private readonly AbrasfXmlBuilder _builder;
     private readonly XmlValidator _validator;
     private readonly XmlSigner _signer;
@@ -25,7 +25,7 @@ public class NfseService : INfseService
     private readonly NfseOptions _config;
 
     public NfseService(
-        AppDbContext context,
+        IDbContextFactory<AppDbContext> factory,
         AbrasfXmlBuilder builder,
         XmlValidator validator,
         XmlSigner signer,
@@ -35,7 +35,7 @@ public class NfseService : INfseService
         INfseRetornoParser retornoParser,
         IOptions<NfseOptions> config)
     {
-        _context = context;
+        _factory = factory;
         _builder = builder;
         _validator = validator;
         _signer = signer;
@@ -52,7 +52,8 @@ public class NfseService : INfseService
     public async Task<int> ObterProximoNumeroRpsAsync()
     {
         // Busca o maior VendaId já salvo no banco. Se não houver nenhum, começa do 1 (ou do número que você definir)
-        var ultimoRPS = await _context.NotasFiscaisEmitidas
+        using var context = await _factory.CreateDbContextAsync();
+        var ultimoRPS = await context.NotasFiscaisEmitidas
             .MaxAsync(n => (int?)n.RpsNumero) ?? 0; // Se quiser começar de um número específico, mude o 0 para 100, por exemplo.
 
         return ultimoRPS + 1;
@@ -68,7 +69,8 @@ public class NfseService : INfseService
 
     public async Task<List<NotaFiscalEmitida>> ListarNotasAsync(DateTime inicio, DateTime fim)
     {
-        return await _context.NotasFiscaisEmitidas
+        using var context = await _factory.CreateDbContextAsync();
+        return await context.NotasFiscaisEmitidas
             .Where(n => n.DataEmissao >= inicio && n.DataEmissao <= fim)
             .OrderByDescending(n => n.DataEmissao)
             .ToListAsync();
@@ -76,6 +78,8 @@ public class NfseService : INfseService
 
     public async Task<RespostaEmissao> VerificarSeRpsJaExisteNaPrefeitura(int rpsNumero)
     {
+        using var context = await _factory.CreateDbContextAsync();
+
         Console.WriteLine($"[CONSULTA] Verificando RPS {rpsNumero}...");
 
         var resposta = new RespostaEmissao(); // Cria o objeto que será preenchido
@@ -107,7 +111,7 @@ public class NfseService : INfseService
             {
                 Console.WriteLine($"[CONSULTA] RPS {rpsNumero} já é a Nota {resposta.NumeroNota}. Sincronizando banco...");
 
-                var notaDb = await _context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.RpsNumero == rpsNumero);
+                var notaDb = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.RpsNumero == rpsNumero);
 
                 if (notaDb == null)
                 {
@@ -120,7 +124,7 @@ public class NfseService : INfseService
                     notaDb.Status = resposta.StatusRecuperado;
                     //notaDb.NumeroNota = resposta.NumeroNota;
                     notaDb.XmlRetorno = resposta.XmlRetorno;
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                     Console.WriteLine($"[BANCO] Status da nota {resposta.NumeroNota} sincronizado para: {notaDb.Status}");
                 }
             }
@@ -201,6 +205,8 @@ public class NfseService : INfseService
 
     private async Task SalvarNoBanco(NotaFiscal nota, RespostaEmissao resposta, StatusNfse status = StatusNfse.Faturada)
     {
+        using var context = await _factory.CreateDbContextAsync();
+
         var statusFinal = resposta.StatusRecuperado != StatusNfse.Pendente
                       ? resposta.StatusRecuperado
                       : status;
@@ -218,8 +224,8 @@ public class NfseService : INfseService
             Status = statusFinal
         };
 
-        _context.NotasFiscaisEmitidas.Add(notaEmitida);
-        await _context.SaveChangesAsync();
+        context.NotasFiscaisEmitidas.Add(notaEmitida);
+        await context.SaveChangesAsync();
 
         resposta.IdInternoNoBanco = notaEmitida.Id;
         Console.WriteLine($"[BANCO] Nota {resposta.NumeroNota} salva com sucesso!");
@@ -227,6 +233,8 @@ public class NfseService : INfseService
 
     public async Task<RespostaEmissao> CancelarNotaAsync(string numeroNota, string codigoMotivo = "1")
     {
+        using var context = await _factory.CreateDbContextAsync();
+
         var resposta = new RespostaEmissao();
         try
         {
@@ -245,7 +253,7 @@ public class NfseService : INfseService
             {
                 Console.WriteLine($"[BANCO] Nota {numeroNota} cancelada");
                 //Atualize o status no banco para Cancelada
-                var notaCancelada = await _context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroNota);
+                var notaCancelada = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroNota);
                 if (notaCancelada != null)
                 {
                     // Chamamos a consulta por RPS.
@@ -266,6 +274,8 @@ public class NfseService : INfseService
     }
     public async Task<RespostaEmissao> SubstituirNotaAsync(string numeroAntiga, NotaFiscal novaNota)
     {
+        using var context = await _factory.CreateDbContextAsync();
+
         var resposta = new RespostaEmissao();
         try
         {
@@ -280,13 +290,13 @@ public class NfseService : INfseService
             if (resposta.Sucesso)
             {
                 // 1. "MATA" A NOTA ANTIGA NO SEU BANCO
-                var notaAntigaDb = await _context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroAntiga);
+                var notaAntigaDb = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroAntiga);
                 if (notaAntigaDb != null)
                 {
                     notaAntigaDb.Status = StatusNfse.Cancelada;
-                    _context.NotasFiscaisEmitidas.Update(notaAntigaDb);
+                    context.NotasFiscaisEmitidas.Update(notaAntigaDb);
                     Console.WriteLine($"[BANCO] Nota antiga {numeroAntiga} marcada como Cancelada.");
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                 }
 
                 // 2. "NASCE" A NOTA NOVA (A 1921 que o parser agora vai pegar certo)

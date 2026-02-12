@@ -337,6 +337,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Components.Authorization;
 using MGMBlazor.Infrastructure.Security;
 using MGMBlazor.Services.Shared;
+using MGMBlazor.Services.Clientes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -345,7 +346,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContextFactory<AppDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 // --- 2. CERTIFICADOS (SINGLETON) ---
@@ -375,6 +376,7 @@ builder.Services.AddScoped<FintelSoapClient>();
 builder.Services.AddScoped<FaturaImportService>(); // Novo serviço de CSV
 builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<ProtectedLocalStorage>();
+builder.Services.AddScoped<IClienteService, ClienteService>();
 
 // Adiciona os serviços de autenticação e autorização padrão do .NET
 builder.Services.AddCascadingAuthenticationState();

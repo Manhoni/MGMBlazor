@@ -12,6 +12,7 @@ public class NfsePrestador
 {
     public string Cnpj { get; set; } = string.Empty;
     public string InscricaoMunicipal { get; set; } = string.Empty;
+    public string CodigoMunicipio { get; set; } = string.Empty;
 }
 
 public class NfseEndpoints

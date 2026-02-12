@@ -5,7 +5,7 @@
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
 @inject FaturaImportService ImportService
-@inject AppDbContext DbContext
+@inject IDbContextFactory<AppDbContext> DbFactory
 @inject IJSRuntime JS
 @inject IConfiguration config
 @inject CepService CepService
@@ -79,8 +79,8 @@
                               </div>
                               <div class="col-md-2 mb-3">
                                     <label class="fw-bold small">CEP *</label>
-                                    <input type="text" class="form-control" @bind="cepBoleto" @oninput="OnCepChange"
-                                           maxlength="9" placeholder="00000-000" />
+                                    <input type="text" class="form-control" value="@MGMFormatador.FormatarCep(cepBoleto)"
+                                           @oninput="OnCepChange" maxlength="9" placeholder="00000-000" />
                               </div>
                               <div class="row">
                                     <div class="col-md-3 mb-3">
@@ -99,7 +99,7 @@
                                           <span>
                                                 PROCESSANDO...</span>
                                           }
-                                    else
+                              else
                                           {
                                                 <span>EMITIR NOTA FISCAL</span>
                                           }
@@ -152,8 +152,8 @@
                                     </div>
                                     <div class="col-md-1 mb-3">
                                           <label class="fw-bold small">Nº</label>
-                                          <input type="text" class="form-control shadow-sm" @bind="numeroEndereco"
-                                                 maxlength="5" placeholder="00.00" />
+                                          <input type="text" class="form-control shadow-sm" @bind="numeroEndereco" maxlength="5"
+                                                 placeholder="00.00" />
                                     </div>
                                     <div class="col-md-4 mb-3">
                                           <label class="fw-bold small">BAIRRO</label>
@@ -223,7 +223,8 @@
 
       protected override async Task OnInitializedAsync()
       {
-            servicos = await DbContext.Servicos.ToListAsync();
+            using var context = await DbFactory.CreateDbContextAsync();
+            servicos = await context.Servicos.ToListAsync();
       }
 
       private async Task HandleFileSelected(InputFileChangeEventArgs e)
@@ -237,13 +238,20 @@
                   resumo = ImportService.ProcessarCsv(ms);
                   statusTeste = "✅ Fatura importada com sucesso!";
 
-                  var clienteExistente = await DbContext.Clientes.FirstOrDefaultAsync(c => c.Cnpj == resumo.CnpjCpf);
+                  using var context = await DbFactory.CreateDbContextAsync();
+                  var clienteExistente = await context.Clientes.FirstOrDefaultAsync(c => c.Cnpj == resumo.CnpjCpf);
 
                   if (clienteExistente != null)
                   {
                         cepBoleto = clienteExistente.Cep;
                         numeroEndereco = clienteExistente.Numero;
-                  } 
+                        emailCliente = clienteExistente.Email;
+                        enderecoBoleto = clienteExistente.Endereco;
+                        bairroBoleto = clienteExistente.Bairro;
+                        cidadeBoleto = clienteExistente.Cidade;
+                        ufBoleto = clienteExistente.Uf;
+                        ibgeNota = clienteExistente.MunicipioCodigoIbge;
+                  }
             }
             catch (Exception ex)
             {
