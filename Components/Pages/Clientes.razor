@@ -4,6 +4,7 @@
 
 @inject IClienteService ClienteService
 @inject CepService CepService
+@inject IDbContextFactory<AppDbContext> DbFactory
 @inject NavigationManager Nav
 
 <PageTitle>Cadastro de Clientes</PageTitle>
@@ -17,22 +18,44 @@
             </button>
       </div>
 
-      <!-- Seção de Busca -->
-      <div class="card shadow-sm mb-4">
-            <div class="card-body">
+      <!-- Seção de Busca Dinâmica -->
+      <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body bg-light position-relative">
                   <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
-                              <label class="form-label">CNPJ do Cliente</label>
-                              <input type="text" class="form-control" value="@MGMFormatador.FormatarCnpj(cnpjBusca)"
-                                     @oninput="@(e => cnpjBusca = e.Value?.ToString() ?? "")"
-                                     placeholder="00.000.000/0000-00" maxlength="18" />
+                        <div class="col-md-5">
+                              <label class="form-label fw-bold small text-muted">DIGITE CNPJ OU RAZÃO SOCIAL</label>
+                              <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control shadow-sm"
+                                           placeholder="Comece a digitar para pesquisar..." @bind="cnpjBusca"
+                                           @oninput="OnInputBusca" />
+                              </div>
+
+                              @* Lista de Sugestões Autocomplete *@
+                              @if (clientesSugestao.Any())
+                              {
+                                    <ul class="list-group position-absolute w-100 shadow-lg"
+                                              style="z-index: 1050; max-height: 250px; overflow-y: auto; margin-top: 2px;">
+                                          @foreach (var c in clientesSugestao)
+                                          {
+                                                <button class="list-group-item list-group-item-action py-2"
+                                                        @onclick="() => SelecionarCliente(c)">
+                                                      <div class="d-flex justify-content-between">
+                                                            <span class="fw-bold">@c.RazaoSocial</span>
+                                                            <span
+                                                            class="badge bg-light text-muted border">@MGMFormatador.FormatarCnpj(c.Cnpj)</span>
+                                                      </div>
+                                                </button>
+                                          }
+                                    </ul>
+                              }
                         </div>
                         <div class="col-md-auto">
-                              <button class="btn btn-primary" @onclick="Buscar">
-                                    <i class="bi bi-search"></i> Buscar
+                              <button class="btn btn-dark" @onclick="Buscar">
+                                    <i class="bi bi-arrow-right-circle"></i> Abrir Cadastro
                               </button>
                               <button class="btn btn-success ms-2" @onclick="NovoCliente">
-                                    <i class="bi bi-person-plus-fill"></i> Cadastrar Cliente
+                                    <i class="bi bi-person-plus-fill"></i> Novo Cliente
                               </button>
                         </div>
                   </div>
@@ -136,31 +159,68 @@
 
 @code {
       private string cnpjBusca = "";
+      private List<Cliente> todosClientes = new();
+      private List<Cliente> clientesSugestao = new();
       private string cnpjLimpo = "";
       private string mensagem = "";
       private bool exibirFormulario = false;
       private bool isEditMode = false;
       private Cliente cliente = new();
 
-      private async Task Buscar()
+      protected override async Task OnInitializedAsync()
       {
-            if (string.IsNullOrWhiteSpace(cnpjBusca)) return;
+            // Carrega a lista completa de clientes para a busca instantânea
+            using var context = await DbFactory.CreateDbContextAsync();
+            todosClientes = await context.Clientes.ToListAsync();
+      }
 
-            cnpjLimpo = new string(cnpjBusca.Where(char.IsDigit).ToArray());
+      private void OnInputBusca(ChangeEventArgs e)
+      {
+            cnpjBusca = e.Value?.ToString() ?? "";
 
-            var resultado = await ClienteService.BuscarPorCnpjAsync(cnpjLimpo);
-            if (resultado != null)
+            if (cnpjBusca.Length >= 2)
             {
-                  cliente = resultado;
-                  isEditMode = true;
-                  exibirFormulario = true;
-                  mensagem = "Cliente encontrado!";
+                  clientesSugestao = todosClientes
+                      .Where(c => c.RazaoSocial.Contains(cnpjBusca, StringComparison.OrdinalIgnoreCase) ||
+                                  c.Cnpj.Contains(cnpjBusca))
+                      .Take(8) // Mostra até 8 sugestões
+                      .ToList();
             }
             else
             {
-                  mensagem = "CNPJ não encontrado no banco de dados.";
+                  clientesSugestao.Clear();
+            }
+      }
+
+      private void SelecionarCliente(Cliente c)
+      {
+            cliente = c;
+            cnpjBusca = c.Cnpj;
+            clientesSugestao.Clear();
+            isEditMode = true;
+            exibirFormulario = true;
+            mensagem = "";
+      }
+
+      private async Task Buscar()
+      {
+            // Se o usuário clicar no botão após digitar o CNPJ completo
+            if (string.IsNullOrWhiteSpace(cnpjBusca)) return;
+
+            cnpjLimpo = new string(cnpjBusca.Where(char.IsDigit).ToArray());
+            var resultado = todosClientes.FirstOrDefault(c => c.Cnpj == cnpjLimpo);
+
+            if (resultado != null)
+            {
+                  SelecionarCliente(resultado);
+                  mensagem = "Cliente carregado do banco.";
+            }
+            else
+            {
+                  mensagem = "CNPJ não encontrado. Clique em 'Novo Cliente' para cadastrar.";
                   exibirFormulario = false;
             }
+            await Task.CompletedTask;
       }
 
       private void NovoCliente()

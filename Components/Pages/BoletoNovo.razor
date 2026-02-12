@@ -1,0 +1,232 @@
+@page "/boletos/novo"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,Fiscal")]
+@using MGMBlazor.Domain.Entities
+@using MGMBlazor.Services.Sicoob
+@using MGMBlazor.Services.Clientes
+@using MGMBlazor.Infrastructure.Helpers
+@inject ISicoobService SicoobService
+@inject IClienteService ClienteService
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject IConfiguration config
+
+<PageTitle>Novo Boleto Avulso</PageTitle>
+
+<div class="container mt-3 pb-5">
+    <!-- CABEÇALHO -->
+    <div class="d-flex justify-content-between align-items-center mb-3 p-2 shadow-sm rounded bg-white border-left-mgm">
+        <h4 class="m-0 fw-bold text-dark"><i class="bi bi-cash-stack"></i> Emissão de Boleto Avulso</h4>
+        <button class="btn btn-sm btn-outline-secondary" @onclick='() => Nav.NavigateTo("/boletos")'>
+            <i class="bi bi-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    <!-- 1. BUSCA DINÂMICA DO CLIENTE (PAGADOR) -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-dark text-white py-2">
+            <h6 class="mb-0 small fw-bold text-uppercase">1. Dados do Pagador</h6>
+        </div>
+        <div class="card-body bg-light position-relative">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">BUSCAR CLIENTE</label>
+                    <input type="text" class="form-control" placeholder="Nome ou CNPJ..."
+                           @bind="filtroBusca" @oninput="OnInputBusca" />
+                    
+                    @if (clientesSugestao.Any())
+                    {
+                        <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050;">
+                            @foreach (var c in clientesSugestao)
+                            {
+                                <button class="list-group-item list-group-item-action py-2" @onclick="() => SelecionarCliente(c)">
+                                    <strong>@MGMFormatador.FormatarCnpj(c.Cnpj)</strong> - @c.RazaoSocial
+                                </button>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (mostrarFormulario)
+    {
+        <!-- 2. DADOS FINANCEIROS -->
+        <div class="card shadow-sm border-0 mb-4 animate__animated animate__fadeIn">
+            <div class="card-header bg-dark text-white py-2">
+                <h6 class="mb-0 small fw-bold text-uppercase">2. Configurações do Boleto</h6>
+            </div>
+            <div class="card-body bg-light">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="fw-bold small">VALOR DO BOLETO</label>
+                        <div class="input-group">
+                            <span class="input-group-text shadow-sm">R$</span>
+                            <input type="text" class="form-control border-success fw-bold text-success" @bind="ValorExibicao" />
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="fw-bold small">DATA DE VENCIMENTO</label>
+                        <input type="date" class="form-control" @bind="dataVencimento" />
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="fw-bold small text-uppercase">Parcela</label>
+                        <input type="number" class="form-control" @bind="numeroParcela" min="1" max="99" />
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="fw-bold small">SEU NÚMERO (REF. INTERNA)</label>
+                        <input type="text" class="form-control" @bind="seuNumero" placeholder="Ex: 2024-01" />
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <label class="fw-bold small">NÚMERO DA NOTA</label>
+                        <input type="text" class="form-control" @bind="numeroNota"       placeholder="Ex: 1945" @onblur="BuscarIdDaNota" />
+    @if (idNotaEncontrado != null) {
+        <small class="text-success">✅ Nota encontrada no banco!</small>
+    } />
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <div class="alert alert-info py-2 small">
+                            Pagador: <strong>@pagador.RazaoSocial</strong> | CNPJ: @MGMFormatador.FormatarCnpj(pagador.Cnpj)
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer p-0 border-0">
+                <button class="btn btn-primary w-100 py-3 rounded-0 fw-bold" @onclick="GerarBoleto" disabled="@processando">
+                    @if (processando)
+                    {
+                        <span class="spinner-border spinner-border-sm"></span> <span>REGISTRANDO NO SICOOB...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-shield-check"></i> <span>GERAR E REGISTRAR BOLETO</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(statusMsg))
+    {
+        <div class="alert @(statusMsg.Contains("Erro") ? "alert-danger" : "alert-success") shadow-sm">
+            @statusMsg
+        </div>
+    }
+</div>
+
+<style>
+    .border-left-mgm { border-left: 8px solid #76b82a; }
+</style>
+
+@code {
+    private string filtroBusca = "";
+    private string statusMsg = "";
+    private bool mostrarFormulario = false;
+    private bool processando = false;
+    private List<Cliente> todosClientes = new();
+    private List<Cliente> clientesSugestao = new();
+    
+    private Cliente pagador = new();
+    private decimal valorBoleto = 0;
+    private DateTime dataVencimento = DateTime.Today.AddDays(15);
+    private int numeroParcela = 1;
+    private string seuNumero = "";
+    private string numeroNota = "";
+    private int? idNotaEncontrado = null;
+
+    // A propriedade que funcionou na Nota!
+    private string ValorExibicao
+    {
+        get => MGMFormatador.FormatarMoedaParaInput(valorBoleto);
+        set => valorBoleto = MGMFormatador.ConverterParaDecimal(value);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        todosClientes = await context.Clientes.ToListAsync();
+    }
+
+    private async Task BuscarIdDaNota()
+    {
+        if (string.IsNullOrWhiteSpace(numeroNota)) {
+            idNotaEncontrado = null;
+            return;
+        }
+
+        using var context = await DbFactory.CreateDbContextAsync();
+        // Busca a nota pelo número oficial (string) para pegar o Id (int)
+        var nota = await context.NotasFiscaisEmitidas
+            .FirstOrDefaultAsync(n => n.NumeroNota == numeroNota);
+        
+        idNotaEncontrado = nota?.Id; // Se não achar, fica null
+    }
+
+    private void OnInputBusca(ChangeEventArgs e)
+    {
+        filtroBusca = e.Value?.ToString() ?? "";
+        if (filtroBusca.Length >= 2)
+        {
+            clientesSugestao = todosClientes
+                .Where(c => c.RazaoSocial.Contains(filtroBusca, StringComparison.OrdinalIgnoreCase) || c.Cnpj.Contains(filtroBusca))
+                .Take(5).ToList();
+        }
+        else { clientesSugestao.Clear(); }
+    }
+
+    private void SelecionarCliente(Cliente c)
+    {
+        pagador = c;
+        filtroBusca = c.RazaoSocial;
+        clientesSugestao.Clear();
+        mostrarFormulario = true;
+    }
+
+    private async Task GerarBoleto()
+    {
+        if (valorBoleto <= 0) { statusMsg = "Erro: Valor deve ser maior que zero."; return; }
+
+        processando = true;
+        try
+        {
+            var usarSandbox = config.GetValue<bool>("SicoobConfig:UsarSandbox");
+            
+            var request = new BoletoRequest
+            {
+                NumeroCliente = usarSandbox ? 25546454 : config.GetValue<long>("SicoobConfig:NumeroCliente"),
+                NumeroContaCorrente = usarSandbox ? 0 : config.GetValue<long>("SicoobConfig:NumeroContaCorrente"),
+                Valor = valorBoleto,
+                NumeroParcela = numeroParcela,
+                SeuNumero = "MGM-" + seuNumero,
+                DataEmissao = usarSandbox ? "2018-09-20" : DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00"),
+                DataVencimento = usarSandbox ? "2018-09-20" : dataVencimento.ToString("yyyy-MM-ddT00:00:00-03:00"),
+                Pagador = new PagadorRequest
+                {
+                    Nome = pagador.RazaoSocial,
+                    NumeroCpfCnpj = pagador.Cnpj,
+                    Endereco = pagador.Endereco,
+                    Cidade = pagador.Cidade,
+                    Cep = pagador.Cep,
+                    Uf = pagador.Uf
+                },
+                GerarPdf = true
+            };
+
+            var resp = await SicoobService.IncluirBoletoAsync(idNotaEncontrado, request);
+
+            if (resp?.Resultado?.PdfBoleto != null)
+            {
+                statusMsg = "✅ Boleto registrado com sucesso!";
+                await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMsg = "❌ Erro: " + ex.Message;
+        }
+        finally { processando = false; }
+    }
+}

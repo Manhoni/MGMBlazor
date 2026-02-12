@@ -104,7 +104,7 @@ public class SicoobService : ISicoobService
 
     // --- MÉTODOS DE AÇÃO (INCLUIR, CONSULTAR, BAIXAR) ---
 
-    public async Task<BoletoResponse?> IncluirBoletoAsync(int notaFiscalEmitidaDbId, BoletoRequest request)
+    public async Task<BoletoResponse?> IncluirBoletoAsync(int? notaFiscalEmitidaDbId, BoletoRequest request)
     {
         if (request.Valor <= 0)
         {

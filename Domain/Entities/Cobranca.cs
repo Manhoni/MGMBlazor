@@ -10,10 +10,10 @@ public class Cobranca
     public int Id { get; set; }
 
     // Relacionamento com a Nota Fiscal
-    public int NotaFiscalEmitidaId { get; set; }
+    public int? NotaFiscalEmitidaId { get; set; }
 
     [ForeignKey("NotaFiscalEmitidaId")]
-    public virtual NotaFiscalEmitida NotaFiscalEmitida { get; set; } = null!;
+    public virtual NotaFiscalEmitida? NotaFiscalEmitida { get; set; }
 
     [Required]
     public long NossoNumero { get; set; }
