@@ -33,4 +33,19 @@ public static class MGMFormatador
             // Como o Postgres salva em UTC, convertemos para Local ao exibir
             return data.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
       }
+
+      public static decimal ConverterParaDecimal(string valor)
+      {
+            if (string.IsNullOrWhiteSpace(valor)) return 0;
+            // Remove R$, espaços e pontos de milhar, troca vírgula por ponto
+            string limpo = valor.Replace("R$", "").Replace(".", "").Replace(" ", "").Trim();
+            if (decimal.TryParse(limpo, out decimal resultado)) return resultado;
+            return 0;
+      }
+
+      // Converte decimal 2500.00 para "2.500,00" (sem o R$, pois o input-group já tem)
+      public static string FormatarMoedaParaInput(decimal valor)
+      {
+            return valor.ToString("N2", new CultureInfo("pt-BR"));
+      }
 }

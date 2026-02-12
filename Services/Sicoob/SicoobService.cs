@@ -64,7 +64,7 @@ public class SicoobService : ISicoobService
         {
             new KeyValuePair<string, string>("grant_type", "client_credentials"),
             new KeyValuePair<string, string>("client_id", GetClientId()),
-            new KeyValuePair<string, string>("scope", _config["SicoobConfig:Scopo"]!)
+            new KeyValuePair<string, string>("scope", _config["SicoobConfig:Escopo"]!)
         });
 
         var response = await _httpClient.PostAsync(_config["SicoobConfig:AuthUrl"], requestBody);
@@ -106,6 +106,11 @@ public class SicoobService : ISicoobService
 
     public async Task<BoletoResponse?> IncluirBoletoAsync(int notaFiscalEmitidaDbId, BoletoRequest request)
     {
+        if (request.Valor <= 0)
+        {
+            throw new Exception("Não é possível gerar um boleto com valor zero ou negativo.");
+        }
+
         await EnsureTokenAsync();
         SetDefaultHeaders();
 

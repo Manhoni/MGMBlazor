@@ -1,0 +1,340 @@
+@page "/notas/nova"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,Fiscal")]
+@using MGMBlazor.Domain.Entities
+@using MGMBlazor.Services.Nfse
+@using MGMBlazor.Services.Clientes
+@using MGMBlazor.Services.Shared
+@using MGMBlazor.Infrastructure.Helpers
+@inject INfseService NfseService
+@inject IClienteService ClienteService
+@inject CepService CepService
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Nova Nota Fiscal Avulsa</PageTitle>
+
+<div class="container mt-3 pb-5">
+    <!-- CABEÇALHO -->
+    <div class="d-flex justify-content-between align-items-center mb-3 p-2 shadow-sm rounded bg-white border-left-mgm">
+        <h4 class="m-0 fw-bold text-dark"><i class="bi bi-file-earmark-plus"></i> Emissão de Nota Avulsa</h4>
+        <button class="btn btn-sm btn-outline-secondary" @onclick='() => Nav.NavigateTo("/notas")'>
+            <i class="bi bi-arrow-left"></i> Voltar
+        </button>
+    </div>
+
+    @if (!processando && respostaNfse != null && respostaNfse.Sucesso)
+    {
+        <div class="alert alert-success shadow-sm mb-4">
+            <h5 class="fw-bold"><i class="bi bi-check-circle-fill"></i> Sucesso! Nota @respostaNfse.NumeroNota emitida.</h5>
+            <div class="mt-2">
+                <a href="@NfseService.GerarLinkConsultaPublica(respostaNfse.NumeroNota!, respostaNfse.CodigoVerificacao!)" 
+                   target="_blank" class="btn btn-sm btn-dark text-white">
+                    <i class="bi bi-printer"></i> Imprimir PDF
+                </a>
+                <button class="btn btn-sm btn-outline-dark ms-2" @onclick="ResetarTela">Nova Nota</button>
+            </div>
+        </div>
+    }
+
+    <!-- 1. BUSCA DE CLIENTE -->
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-dark text-white py-2">
+            <h6 class="mb-0 small fw-bold text-uppercase">1. Identificação do Tomador (Cliente)</h6>
+        </div>
+        <div class="card-body bg-light position-relative"> @* position-relative para a lista de sugestões *@
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">DIGITE O CNPJ OU NOME</label>
+                    <input type="text" class="form-control" 
+                           placeholder="Busca rápida..."
+                           @bind="filtroBusca" @oninput="OnInputBusca" />
+                    
+                    @if (clientesSugestao.Any())
+                    {
+                        <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050; max-height: 200px; overflow-y: auto;">
+                            @foreach (var c in clientesSugestao)
+                            {
+                                <button class="list-group-item list-group-item-action small py-2" @onclick="() => SelecionarCliente(c)">
+                                    <strong>@MGMFormatador.FormatarCnpj(c.Cnpj)</strong> - @c.RazaoSocial
+                                </button>
+                            }
+                        </ul>
+                    }
+                </div>
+                <div class="col-md-auto">
+                    <button class="btn btn-dark" @onclick="BuscarManual"><i class="bi bi-search"></i> Buscar</button>
+                </div>
+                @if (clienteNaoEncontrado)
+                {
+                    <div class="col-md-auto">
+                        <span class="badge bg-warning text-dark p-2">
+                            <i class="bi bi-exclamation-triangle"></i> Não cadastrado. Preencha manualmente.
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. DADOS DA NOTA E ENDEREÇO -->
+    @if (mostrarFormulario)
+    {
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-dark text-white py-2">
+                <h6 class="mb-0 small fw-bold text-uppercase">2. Dados do Serviço e Endereço</h6>
+            </div>
+            <div class="card-body bg-light">
+                <div class="row">
+                    <!-- Dados do Cliente -->
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label small fw-bold">RAZÃO SOCIAL *</label>
+                        <input type="text" class="form-control" @bind="nota.Tomador.RazaoSocial" />
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label small fw-bold">E-MAIL PARA ENVIO *</label>
+                        <input type="email" class="form-control" @bind="nota.Tomador.Email" />
+                    </div>
+
+                    <!-- Dados do Serviço -->
+                    <div class="col-md-8 mb-3">
+                        <label class="form-label small fw-bold text-success">SERVIÇO PRESTADO *</label>
+                        <select class="form-select border-success" @bind="servicoSelecionadoId">
+                            <option value="0">-- Selecione o Serviço --</option>
+                            @foreach (var s in servicos)
+                            {
+                                <option value="@s.Id">@s.CodigoMunicipal - @s.Descricao</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label small fw-bold text-success">VALOR TOTAL</label>
+                        <div class="input-group">
+                            <span class="input-group-text border-success bg-white text-success fw-bold">R$</span>
+                            @* USANDO A PROPRIEDADE DE EXIBIÇÃO PARA FORMATAR *@
+                            <input type="text" class="form-control border-success fw-bold text-success" @bind="ValorExibicao" />
+                        </div>
+                    </div>
+
+                    <!-- Endereço Estratégico -->
+                    <hr class="my-3 text-muted" />
+                    
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label small fw-bold text-primary">CEP *</label>
+                        <input type="text" class="form-control border-primary" 
+                               value="@MGMFormatador.FormatarCep(nota.Tomador.Cep)" 
+                               @oninput="OnCepChange" maxlength="9" />
+                    </div>
+
+                    @if (cepEncontrado || clienteJaExistia)
+                    {
+                        <div class="col-md-7 mb-3 animate__animated animate__fadeIn">
+                            <label class="form-label small fw-bold">LOGRADOURO/ENDEREÇO</label>
+                            <input type="text" class="form-control" @bind="nota.Tomador.Endereco" />
+                        </div>
+                        <div class="col-md-2 mb-3 animate__animated animate__fadeIn">
+                            <label class="form-label small fw-bold">Nº</label>
+                            <input type="text" class="form-control" @bind="nota.Tomador.Numero" />
+                        </div>
+                        <div class="col-md-4 mb-3 animate__animated animate__fadeIn">
+                            <label class="form-label small fw-bold">BAIRRO</label>
+                            <input type="text" class="form-control" @bind="nota.Tomador.Bairro" />
+                        </div>
+                        <div class="col-md-4 mb-3 animate__animated animate__fadeIn">
+                            <label class="form-label small fw-bold text-muted">CIDADE</label>
+                            <input type="text" class="form-control bg-white" @bind="nota.Tomador.Cidade" readonly />
+                        </div>
+                        <div class="col-md-2 mb-3 animate__animated animate__fadeIn">
+                            <label class="form-label small fw-bold text-muted">UF</label>
+                            <input type="text" class="form-control bg-white" @bind="nota.Tomador.Uf" readonly />
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- BOTÃO DE AÇÃO -->
+            <div class="card-footer p-0 border-0">
+                <button class="btn btn-primary w-100 py-3 rounded-0" 
+                        style="font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px;"
+                        @onclick="EmitirNota" disabled="@processando">
+                    @if (processando)
+                    {
+                        <span class="spinner-border spinner-border-sm"></span> <span>Processando...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-cloud-arrow-up-fill"></i> <span>Emitir Nota Fiscal Avulsa</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- ALERTAS DE ERRO -->
+    @if (respostaNfse != null && !respostaNfse.Sucesso)
+    {
+        <div class="alert alert-danger shadow mt-3">
+            <h6 class="fw-bold">❌ Erro na Emissão:</h6>
+            <ul class="mb-0 small">
+                @foreach (var erro in respostaNfse.Erros)
+                {
+                    <li>@erro</li>
+                }
+            </ul>
+        </div>
+    }
+</div>
+
+<style>
+    .border-left-mgm { border-left: 8px solid #76b82a; }
+</style>
+
+@code {
+    private string cnpjBusca = "";
+    private bool mostrarFormulario = false;
+    private bool clienteNaoEncontrado = false;
+    private bool clienteJaExistia = false;
+    private bool cepEncontrado = false;
+    private bool processando = false;
+    
+    private List<Servico> servicos = new();
+    private int servicoSelecionadoId;
+    private NotaFiscal nota = new() { Tomador = new Cliente(), Servico = new Servico() };
+    private RespostaEmissao? respostaNfse;
+ private string filtroBusca = "";
+    private List<Cliente> todosClientes = new();
+    private List<Cliente> clientesSugestao = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = await DbFactory.CreateDbContextAsync();
+        servicos = await context.Servicos.ToListAsync();
+        todosClientes = await context.Clientes.ToListAsync();
+    }
+
+    private void OnCnpjInput(ChangeEventArgs e) => cnpjBusca = e.Value?.ToString() ?? "";
+
+    private async Task BuscarCliente()
+    {
+        var cnpjLimpo = new string(cnpjBusca.Where(char.IsDigit).ToArray());
+        if (string.IsNullOrEmpty(cnpjLimpo)) return;
+
+        processando = true;
+        var cliente = await ClienteService.BuscarPorCnpjAsync(cnpjLimpo);
+        
+        if (cliente != null)
+        {
+            nota.Tomador = cliente;
+            clienteJaExistia = true;
+            clienteNaoEncontrado = false;
+        }
+        else
+        {
+            nota.Tomador = new Cliente { Cnpj = cnpjLimpo };
+            clienteJaExistia = false;
+            clienteNaoEncontrado = true;
+        }
+
+        mostrarFormulario = true;
+        processando = false;
+    }
+
+    private async Task OnCepChange(ChangeEventArgs e)
+    {
+        var valor = e.Value?.ToString() ?? "";
+        nota.Tomador.Cep = valor;
+
+        var numeros = new string(valor.Where(char.IsDigit).ToArray());
+        if (numeros.Length == 8)
+        {
+            var result = await CepService.BuscarEnderecoAsync(numeros);
+            if (result != null && result.Erro != true)
+            {
+                nota.Tomador.Endereco = result.Logradouro;
+                nota.Tomador.Bairro = result.Bairro;
+                nota.Tomador.Cidade = result.Localidade;
+                nota.Tomador.Uf = result.Uf;
+                nota.Tomador.MunicipioCodigoIbge = result.Ibge;
+                cepEncontrado = true;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task EmitirNota()
+    {
+        if (servicoSelecionadoId == 0 || nota.Valor <= 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Selecione o serviço e informe um valor maior que zero.");
+            return;
+        }
+
+        processando = true;
+        try
+        {
+            //int rpsCandidato = await NfseService.ObterProximoNumeroRpsAsync();
+
+            // 1. Resolve RPS
+            nota.Id = await NfseService.ObterProximoNumeroRpsAsync();
+            var consulta = await NfseService.VerificarSeRpsJaExisteNaPrefeitura(nota.Id);
+            
+            // 2. Associa o Serviço
+            nota.Servico = servicos.First(s => s.Id == servicoSelecionadoId);
+
+            // 3. Envia
+            respostaNfse = await NfseService.EmitirNotaAsync(nota);
+            
+            if (respostaNfse.Sucesso) {
+                // Sincroniza campos se necessário
+            }
+        }
+        catch (Exception ex)
+        {
+            respostaNfse = new RespostaEmissao { Sucesso = false, Erros = new() { ex.Message } };
+        }
+        finally { processando = false; }
+    }
+
+    private void ResetarTela()
+    {
+        Nav.NavigateTo(Nav.Uri, forceLoad: true);
+    }
+
+  // Busca Dinâmica enquanto digita
+    private void OnInputBusca(ChangeEventArgs e)
+    {
+        filtroBusca = e.Value?.ToString() ?? "";
+        if (filtroBusca.Length > 2)
+        {
+            clientesSugestao = todosClientes
+                .Where(c => c.RazaoSocial.Contains(filtroBusca, StringComparison.OrdinalIgnoreCase) || 
+                            c.Cnpj.Contains(filtroBusca))
+                .Take(5).ToList();
+        }
+        else { clientesSugestao.Clear(); }
+    }
+
+    private void SelecionarCliente(Cliente c)
+    {
+        nota.Tomador = c;
+        filtroBusca = c.RazaoSocial;
+        clientesSugestao.Clear();
+        mostrarFormulario = true;
+        clienteJaExistia = true;
+        clienteNaoEncontrado = false;
+    }
+
+    // Lógica do Valor usando o Helper
+    private string ValorExibicao
+    {
+        get => MGMFormatador.FormatarMoedaParaInput(nota.Valor);
+        set => nota.Valor = MGMFormatador.ConverterParaDecimal(value);
+    }
+
+    private async Task BuscarManual()
+    {
+        // Se o usuário clicar no botão sem escolher da lista
+        await BuscarCliente(); 
+    }
+}

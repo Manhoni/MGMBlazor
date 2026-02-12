@@ -1,16 +1,18 @@
 @page "/notas"
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @rendermode InteractiveServer
 @attribute [Authorize]
 @inject INfseService NfseService
 @inject ISicoobService SicoobService
 @inject IDbContextFactory<AppDbContext> DbFactory 
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <div class="container-fluid mt-3">
       <div
             class="d-flex justify-content-between align-items-center mb-3 p-2 shadow-sm rounded bg-white border-left-mgm">
             <h4 class="m-0 fw-bold text-dark">📋 Notas Fiscais Emitidas</h4>
-            <button class="btn btn-sm btn-success" @onclick="AbrirModalNovaNota">
+            <button class="btn btn-sm btn-success" @onclick='() => Nav.NavigateTo("/notas/nova")'>
                   <span class="bi bi-plus-lg"></span> Nota Avulsa
             </button>
       </div>
@@ -209,5 +211,5 @@
             }
       }
 
-      private void AbrirModalNovaNota() { /* Lógica para abrir modal amanhã */ }
+      private void AbrirNovaNota() { /* Lógica para abrir a tela /notas/nova */ }
 }

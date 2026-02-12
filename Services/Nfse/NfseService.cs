@@ -160,6 +160,15 @@ public class NfseService : INfseService
 
     public async Task<RespostaEmissao> EmitirNotaAsync(NotaFiscal nota)
     {
+        if (nota.Valor <= 0)
+        {
+            return new RespostaEmissao
+            {
+                Sucesso = false,
+                Erros = new List<string> { "O valor da nota fiscal deve ser maior que zero." }
+            };
+        }
+
         var resposta = new RespostaEmissao();
 
         try

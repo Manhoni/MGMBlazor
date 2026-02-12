@@ -6,6 +6,11 @@
 
 main {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    /* Garante que o main ocupe a altura da tela toda */
+    width: 100%;
 }
 
 .sidebar {
@@ -21,27 +26,30 @@ main {
     align-items: center;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
+.top-row ::deep a,
+.top-row ::deep .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+    text-decoration: none;
+}
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
+.top-row ::deep a:hover,
+.top-row ::deep .btn-link:hover {
+    text-decoration: underline;
+}
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
+.top-row ::deep a:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 @media (max-width: 640.98px) {
     .top-row {
         justify-content: space-between;
     }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
+    .top-row ::deep a,
+    .top-row ::deep .btn-link {
         margin-left: 0;
     }
 }
@@ -70,7 +78,8 @@ main {
         width: 0;
     }
 
-    .top-row, article {
+    .top-row,
+    article {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }
@@ -88,9 +97,43 @@ main {
     z-index: 1000;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+.footer {
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    /* EFEITO 3D E DEGRADÊ ACINZENTADO */
+    background: linear-gradient(180deg, #fdfdfd 0%, #ebebeb 100%);
+    border-top: 1px solid #c0c0c0;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    /* Sombra para dar profundidade */
+
+    padding-left: 2rem !important;
+    padding-right: 1.5rem !important;
+
+    /* PRENDER EMBAIXO SEMPRE VISÍVEL */
+    position: sticky;
+    bottom: 0;
+    z-index: 1030;
+}
+
+@media (min-width: 641px) {
+    .footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 1;
     }
+}
+
+/* Ajuste opcional para o conteúdo principal não bater no footer */
+article {
+    flex: 1;
+    padding-bottom: 3rem;
+}
