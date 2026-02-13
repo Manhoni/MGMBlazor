@@ -377,6 +377,7 @@ builder.Services.AddScoped<FaturaImportService>(); // Novo serviço de CSV
 builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
+builder.Services.AddScoped<EmailService>();
 
 // Adiciona os serviços de autenticação e autorização padrão do .NET
 builder.Services.AddCascadingAuthenticationState();
@@ -407,10 +408,14 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddDefaultTokenProviders()
 .AddClaimsPrincipalFactory<MGMClaimsFactory>();
 
-//builder.Services.AddAuthorization();
-//builder.Services.AddAuthentication();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(15); // Tempo de inatividade: 15 minutos
+    options.SlidingExpiration = true;
+    options.LoginPath = "/Account/Login";
+});
 
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddScoped<IEmailSender<ApplicationUser>, EmailService>();
 
 builder.Services.AddHttpClient<INfseService, NfseService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
 builder.Services.AddHttpClient<ISicoobService, SicoobService>().ConfigurePrimaryHttpMessageHandler(sp => CriarHandler(sp));
@@ -462,5 +467,24 @@ app.MapRazorComponents<MGMBlazor.web.Components.App>() // Verifique se o namespa
     .AddInteractiveServerRenderMode();
 
 app.MapAdditionalIdentityEndpoints(); // Mapeia endpoints adicionais para gerenciamento de usuários e roles
+
+// --- TESTE DE EMAIL (Mailtrap) ---
+// Você pode comentar este bloco após o primeiro sucesso
+// using (var scope = app.Services.CreateScope())
+// {
+//     var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+//     Console.WriteLine("[TESTE] Tentando enviar e-mail de teste para o Mailtrap...");
+
+//     bool enviou = await emailService.EnviarFaturamentoPorEmail(
+//         "teste@cliente.com",
+//         "https://nfse.maringa.pr.gov.br/exemplo",
+//         "", // Enviando vazio para testar apenas o corpo e o logo
+//         "9999"
+//     );
+
+//     if (enviou) Console.WriteLine("[TESTE] E-mail de teste enviado! Verifique o painel do Mailtrap.");
+//     else Console.WriteLine("[TESTE] Falha no e-mail. Verifique o console para erros de SMTP.");
+// }
+// ---------------------------------
 
 app.Run();

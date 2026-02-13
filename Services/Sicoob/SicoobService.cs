@@ -180,9 +180,10 @@ public class SicoobService : ISicoobService
                 QrCodePix = boletoGerado.Resultado.QrCode,
                 Valor = boletoGerado.Resultado.Valor,
                 DataVencimento = dataVenc,
-                Status = "Pendente",
                 DataCadastro = DateTime.UtcNow,
-                PdfBase64 = pdfFinal
+                PdfBase64 = pdfFinal,
+                JsonRetorno = JsonSerializer.Serialize(boletoGerado),
+                Status = "Pendente"
             };
 
             _dbContext.Cobrancas.Add(novaCobranca);

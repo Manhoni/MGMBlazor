@@ -9,6 +9,7 @@
 @inject IJSRuntime JS
 @inject IConfiguration config
 @inject CepService CepService
+@inject EmailService EmailService
 
 <div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <!-- Header MGM -->
@@ -398,6 +399,7 @@
                   if (resp?.Resultado?.PdfBoleto != null)
                   {
                         boletoGerado = true;
+
                         if (resp.Resultado.PdfBoleto.Length > 200)
                         {
                               Console.WriteLine("[INFO] PDF válido recebido. Abrindo...");
@@ -408,6 +410,25 @@
                         {
                               Console.WriteLine($"[AVISO] Sandbox enviou PDF incompleto ({resp.Resultado.PdfBoleto.Length} chars).");
                               statusTeste = "⚠️ Nota gerada, mas o Sandbox do banco não enviou um PDF válido para visualização.";
+                        }
+
+                        statusTeste = "✅ Boleto gerado! Enviando e-mail para o cliente...";
+                        StateHasChanged();
+
+                        // DISPARA O E-MAIL AQUI!
+                        bool enviouEmail = await EmailService.EnviarFaturamentoPorEmail(
+                              emailCliente, 
+                              linkNota!, 
+                              resp.Resultado.PdfBoleto, 
+                              respostaNfse!.NumeroNota!);
+
+                        if (enviouEmail) 
+                        {
+                              statusTeste = "✅ Processo completo: Nota, Boleto e E-mail enviados!";
+                        } 
+                        else 
+                        {
+                              statusTeste = "⚠️ Nota e Boleto OK, mas o E-MAIL falhou. Verifique o Mailtrap.";
                         }
                   }
             }

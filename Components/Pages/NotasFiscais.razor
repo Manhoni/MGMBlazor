@@ -28,13 +28,17 @@
                         <label class="small fw-bold">FIM</label>
                         <input type="date" class="form-control form-control-sm" @bind="dataFim" />
                   </div>
-                  <div class="col-md-3">
-                        <button class="btn btn-sm btn-dark px-4" @onclick="CarregarNotas">🔎 Filtrar</button>
-                        <h3></h3>
-                        <button class="btn btn-sm btn-primary ms-2" @onclick="AtualizarSelecionadas"
-                                disabled="@(!notasSelecionadas.Any())">
-                              🔄 Atualizar Status (@notasSelecionadas.Count)
-                        </button>
+                  <div class="col-md-4">
+                        <div class="d-flex align-items-end gap-2">
+                              <button class="btn btn-sm btn-dark px-3" @onclick="CarregarNotas">
+                                    <i class="bi bi-search"></i> Filtrar
+                              </button>
+                              
+                              <button class="btn btn-sm btn-primary" @onclick="AtualizarSelecionadas"
+                                    disabled="@(!notasSelecionadas.Any())">
+                                    <i class="bi bi-arrow-repeat"></i> Atualizar Status (@notasSelecionadas.Count)
+                              </button>
+                        </div>
                   </div>
             </div>
       </div>
