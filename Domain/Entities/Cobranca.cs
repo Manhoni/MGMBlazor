@@ -17,6 +17,7 @@ public class Cobranca
 
     [Required]
     public long NossoNumero { get; set; }
+    public int NumeroParcela { get; set; } = 1;
 
     [Required]
     public string LinhaDigitavel { get; set; } = string.Empty;

@@ -138,7 +138,7 @@ public class EmailService : IEmailSender<ApplicationUser>
       }
 
       // --- 2. MÉTODO PARA NOTA FISCAL E BOLETO ---
-      public async Task<bool> EnviarFaturamentoPorEmail(string emailDestino, string linkNota, string base64Boleto, string numeroNota)
+      public async Task<bool> EnviarFaturamentoPorEmail(string emailDestino, string linkNota, List<BoletoAnexo> boletos, string numeroNota)
       {
             var message = GerarMensagemBase(emailDestino, $"Nota Fiscal {numeroNota} - MGM Engenharia");
             var bodyBuilder = new BodyBuilder();
@@ -154,9 +154,11 @@ public class EmailService : IEmailSender<ApplicationUser>
                   cidLogo = image.ContentId;
             }
 
+            string textoBoleto = boletos.Count > 1 ? "Os boletos bancários seguem em anexo" : "O boleto bancário segue em anexo";
+
             //Versão em texto puro para os filtros de Spam
             bodyBuilder.TextBody = $"Olá! Sua nota fiscal nº {numeroNota} foi emitida. " +
-                                   $"Acesse em: {linkNota}. O boleto segue em anexo.";
+                                   $"Acesse em: {linkNota}. {textoBoleto}";
             // Montagem do HTML com o Logo
             bodyBuilder.HtmlBody = $@"
             <div style='font-family: sans-serif; color: #333; max-width: 600px;'>
@@ -168,27 +170,30 @@ public class EmailService : IEmailSender<ApplicationUser>
                     <a href='{linkNota}' style='background-color: #2e2e2e; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;'>VER NOTA FISCAL</a>
                 </p>
                 <hr style='border: 0; border-top: 1px solid #eee;' />
-                <p><b>O boleto bancário para pagamento segue em anexo a este e-mail (PDF).</b></p>
+                <p><b>{textoBoleto} a este e-mail (PDF).</b></p>
                 <br />
                 <p style='font-size: 12px; color: #999;'>MGM Engenharia de Segurança e Medicina do Trabalho<br/>Este é um e-mail automático, por favor não responda.</p>
             </div>";
 
             // Anexo do Boleto
-            if (!string.IsNullOrEmpty(base64Boleto) && base64Boleto.Length > 500)
+            foreach (var boleto in boletos)
             {
-                  try
+                  if (!string.IsNullOrEmpty(boleto.Base64) && boleto.Base64.Length > 500)
                   {
-                        byte[] pdfBytes = Convert.FromBase64String(base64Boleto);
-                        bodyBuilder.Attachments.Add($"Boleto_MGM_{numeroNota}.pdf", pdfBytes);
+                        try
+                        {
+                              byte[] pdfBytes = Convert.FromBase64String(boleto.Base64);
+                              bodyBuilder.Attachments.Add($"Boleto_MGM_{numeroNota}_Parcela_{boleto.NumeroParcela:D2}.pdf", pdfBytes);
+                        }
+                        catch (Exception ex)
+                        {
+                              Console.WriteLine($"[AVISO EMAIL] Base64 do boleto era inválido: {ex.Message}");
+                        }
                   }
-                  catch (Exception ex)
+                  else if (!string.IsNullOrEmpty(boleto.Base64))
                   {
-                        Console.WriteLine($"[AVISO EMAIL] Base64 do boleto era inválido: {ex.Message}");
+                        Console.WriteLine("[INFO EMAIL] Boleto ignorado por ser string de Sandbox (muito curta).");
                   }
-            }
-            else if (!string.IsNullOrEmpty(base64Boleto))
-            {
-                  Console.WriteLine("[INFO EMAIL] Boleto ignorado por ser string de Sandbox (muito curta).");
             }
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -236,5 +241,11 @@ public class EmailService : IEmailSender<ApplicationUser>
                   if (client.IsConnected)
                         await client.DisconnectAsync(true);
             }
+      }
+
+      public class BoletoAnexo
+      {
+            public string Base64 { get; set; } = string.Empty;
+            public int NumeroParcela { get; set; }
       }
 }

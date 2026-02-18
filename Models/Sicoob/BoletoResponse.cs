@@ -43,8 +43,14 @@ public class Resultado
     [JsonPropertyName("dataVencimento")]
     public string? DataVencimento { get; set; }
 
+    [JsonPropertyName("numeroParcela")]
+    public int NumeroParcela { get; set; }
+
     [JsonPropertyName("pagador")]
     public PagadorResponse? Pagador { get; set; }
+
+    [JsonPropertyName("beneficiarioFinal")]
+    public BeneficiarioResponse? Beneficiario { get; set; }
 
     [JsonPropertyName("mensagensInstrucao")]
     public List<string>? MensagensInstrucao { get; set; }
@@ -76,4 +82,13 @@ public class PagadorResponse
 
     [JsonPropertyName("endereco")]
     public string? Endereco { get; set; }
+}
+
+public class BeneficiarioResponse
+{
+    [JsonPropertyName("numeroCpfCnpj")]
+    public string? NumeroCpfCnpj { get; set; }
+
+    [JsonPropertyName("nome")]
+    public string? Nome { get; set; }
 }

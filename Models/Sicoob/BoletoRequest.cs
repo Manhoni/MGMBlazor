@@ -38,10 +38,22 @@ public class BoletoRequest
     public int TipoDesconto { get; set; } = 0;
 
     [JsonPropertyName("tipoMulta")]
-    public int TipoMulta { get; set; } = 0;
+    public int TipoMulta { get; set; } = 2; //2 - percentual, 1 valor fixo
+
+    [JsonPropertyName("dataMulta")]
+    public string? DataMulta { get; set; }
+
+    [JsonPropertyName("valorMulta")]
+    public decimal ValorMulta { get; set; } = 2.00m;
 
     [JsonPropertyName("tipoJurosMora")]
-    public int TipoJurosMora { get; set; } = 3; //3
+    public int TipoJurosMora { get; set; } = 2; //2 taxa mensal, 1 valor por dia
+
+    [JsonPropertyName("dataJurosMora")]
+    public string? DataJurosMora { get; set; }
+
+    [JsonPropertyName("valorJurosMora")]
+    public decimal ValorJurosMora { get; set; } = 1.00m;
 
     [JsonPropertyName("numeroParcela")]
     public int NumeroParcela { get; set; } = 1;
@@ -49,11 +61,30 @@ public class BoletoRequest
     [JsonPropertyName("pagador")]
     public PagadorRequest Pagador { get; set; } = new();
 
+    [JsonPropertyName("beneficiarioFinal")]
+    public BeneficiarioRequest Beneficiario { get; set; } = new();
+
+    [JsonPropertyName("mensagensInstrucao")]
+    public List<string> MensagensInstrucao { get; set; } = new List<string>
+    {
+        "Após o vencimento cobrar multa de 2%",
+        "Após o vencimento cobrar juros de 1% ao mês"
+    };
+
     [JsonPropertyName("numeroContratoCobranca")]
     public long NumeroContratoCobranca { get; set; } = 1;
 
     [JsonPropertyName("gerarPdf")]
     public bool GerarPdf { get; set; } = true;
+}
+
+public class BeneficiarioRequest
+{
+    [JsonPropertyName("numeroCpfCnpj")]
+    public string NumeroCpfCnpj { get; set; } = "02152507000196";
+
+    [JsonPropertyName("nome")]
+    public string Nome { get; set; } = "MGM - ENGENHARIA DE SEGURANCA E MEDICINA DO TRABALHO LTDA";
 }
 
 public class PagadorRequest

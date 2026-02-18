@@ -1,4 +1,7 @@
 @page "/faturamento"
+
+@using static MGMBlazor.Services.Shared.EmailService
+
 @attribute [Authorize(Roles = "Admin,Fiscal")]
 @rendermode InteractiveServer
 @inject NavigationManager Nav
@@ -139,9 +142,20 @@
                                           <input type="date" class="form-control shadow-sm" @bind="dataVencimentoBoleto" />
                                     </div>
                                     <div class="col-md-2 mb-3">
-                                          <label class="fw-bold small">PARCELA</label>
-                                          <input type="number" class="form-control shadow-sm" @bind="numeroParcela" />
+                                          <label class="fw-bold small">PARCELAS</label>
+                                          <input type="number" class="form-control shadow-sm" @bind="numeroParcela" min="1" max="99"/>
                                     </div>
+                                    @if (numeroParcela > 1)
+                                    {
+                                          <div class="col-md-3 mb-3 animate__animated animate__fadeIn">
+                                                <label class="fw-bold small text-success">PERÍODO</label>
+                                                <select class="form-select shadow-sm border-success" @bind="periodoSelecionado">
+                                                <option value="@PeriodoParcelamento.Mensal">Mensal</option>
+                                                <option value="@PeriodoParcelamento.Quinzenal">Quinzenal</option>
+                                                <option value="@PeriodoParcelamento.Semanal">Semanal</option>
+                                                </select>
+                                          </div>
+                                    }
                                     <div class="col-md-2 mb-3">
                                           <label class="fw-bold small">SEU NUMERO</label>
                                           <input type="text" class="form-control shadow-sm" @bind="seuNumero" />
@@ -212,6 +226,7 @@
       private string? linkNota;
       private DateTime dataVencimentoBoleto = DateTime.Today.AddDays(15);
       private int numeroParcela = 1;
+      private PeriodoParcelamento periodoSelecionado = PeriodoParcelamento.Mensal;
       private string seuNumero = "";
       private string enderecoBoleto = "";
       private string numeroEndereco = "0";
@@ -369,6 +384,9 @@
             processando = true;
             try
             {
+                  DateTime vencimento = dataVencimentoBoleto;
+                  string dataCobranca = vencimento.AddDays(1).ToString("yyyy-MM-dd");
+
                   var usarSandbox = config.GetValue<bool>("SicoobConfig:UsarSandbox");
                   var boletoReq = new BoletoRequest
                   {
@@ -379,6 +397,8 @@
                         SeuNumero = "MGM-" + seuNumero,
                         DataEmissao = usarSandbox ? "2018-09-20" : DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00"),
                         DataVencimento = usarSandbox ? "2018-09-20" : dataVencimentoBoleto.ToString("yyyy-MM-ddT00:00:00-03:00"),
+                        DataMulta = usarSandbox ? "2018-09-20" : dataCobranca,
+                        DataJurosMora = usarSandbox ? "2018-09-20" : dataCobranca,
                         Pagador = new PagadorRequest
                         {
                               Nome = resumo.NomeCliente,
@@ -391,27 +411,71 @@
                         GerarPdf = true
                   };
 
-                  var resp = await SicoobService.IncluirBoletoAsync(respostaNfse!.IdInternoNoBanco, boletoReq);
+                  var anexosEmail = new List<BoletoAnexo>();
 
-                  Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto)}");
-                  Console.WriteLine($"[DEBUG-FRONT] Tamanho do PDF: {resp?.Resultado?.PdfBoleto?.Length ?? 0}");
-
-                  if (resp?.Resultado?.PdfBoleto != null)
+                  if (numeroParcela > 1)
                   {
-                        boletoGerado = true;
+                        Console.WriteLine($"[DEBUG-FRONT] Entrou na geração de lote para {numeroParcela} parcelas, período: {periodoSelecionado}");
+                        // CHAMA O NOVO MÉTODO DE LOTE
+                        var resultados = await SicoobService.GerarLoteBoletosAsync(
+                        respostaNfse!.IdInternoNoBanco, 
+                        boletoReq, 
+                        numeroParcela, 
+                        periodoSelecionado);
 
-                        if (resp.Resultado.PdfBoleto.Length > 200)
+                        if (resultados.Any())
                         {
-                              Console.WriteLine("[INFO] PDF válido recebido. Abrindo...");
-                              await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
-                              statusTeste = "✅ Boleto gerado e registrado com sucesso!";
-                        }
-                        else
-                        {
-                              Console.WriteLine($"[AVISO] Sandbox enviou PDF incompleto ({resp.Resultado.PdfBoleto.Length} chars).");
-                              statusTeste = "⚠️ Nota gerada, mas o Sandbox do banco não enviou um PDF válido para visualização.";
-                        }
+                              foreach (var res in resultados)
+                              {
+                                    if (!string.IsNullOrEmpty(res.Resultado?.PdfBoleto))
+                                    {
+                                          anexosEmail.Add(new BoletoAnexo { 
+                                                Base64 = res.Resultado.PdfBoleto, 
+                                                NumeroParcela = res.Resultado.NumeroParcela 
+                                          });
+                                    }
+                              }
 
+                              boletoGerado = true;
+                              statusTeste = $"✅ {resultados.Count} parcelas geradas com sucesso!";
+                              
+                              // Abre o PDF da primeira parcela para o usuário ver
+                              var primeiroPdf = resultados.First().Resultado?.PdfBoleto;
+                              if (!string.IsNullOrEmpty(primeiroPdf))
+                                    await JS.InvokeVoidAsync("abrirPdfNoNavegador", primeiroPdf);
+                        }
+                  }
+                  else
+                  {
+                        var resp = await SicoobService.IncluirBoletoAsync(respostaNfse!.IdInternoNoBanco, boletoReq);
+
+                        Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto)}");
+                        Console.WriteLine($"[DEBUG-FRONT] Tamanho do PDF: {resp?.Resultado?.PdfBoleto?.Length ?? 0}");
+
+                        if (resp?.Resultado?.PdfBoleto != null)
+                        {
+                              anexosEmail.Add(new BoletoAnexo { 
+                                    Base64 = resp.Resultado.PdfBoleto, 
+                                    NumeroParcela = 1 
+                              });
+                              boletoGerado = true;
+
+                              if (resp.Resultado.PdfBoleto.Length > 200)
+                              {
+                                    Console.WriteLine("[INFO] PDF válido recebido. Abrindo...");
+                                    await JS.InvokeVoidAsync("abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+                                    statusTeste = "✅ Boleto gerado e registrado com sucesso!";
+                              }
+                              else
+                              {
+                                    Console.WriteLine($"[AVISO] Sandbox enviou PDF incompleto ({resp.Resultado.PdfBoleto.Length} chars).");
+                                    statusTeste = "⚠️ Boleto gerado, mas o Sandbox do banco não enviou um PDF válido para visualização.";
+                              } 
+                        }
+                  }
+
+                  if (boletoGerado)
+                  {
                         statusTeste = "✅ Boleto gerado! Enviando e-mail para o cliente...";
                         StateHasChanged();
 
@@ -419,7 +483,7 @@
                         bool enviouEmail = await EmailService.EnviarFaturamentoPorEmail(
                               emailCliente, 
                               linkNota!, 
-                              resp.Resultado.PdfBoleto, 
+                              anexosEmail, 
                               respostaNfse!.NumeroNota!);
 
                         if (enviouEmail) 
@@ -428,7 +492,7 @@
                         } 
                         else 
                         {
-                              statusTeste = "⚠️ Nota e Boleto OK, mas o E-MAIL falhou. Verifique o Mailtrap.";
+                              statusTeste = "⚠️ Nota e Boleto OK, mas o E-MAIL falhou. Verifique a configuração do serviço de e-mail.";
                         }
                   }
             }

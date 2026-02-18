@@ -22,6 +22,7 @@ public class SicoobService : ISicoobService
         _config = config;
         _factory = factory;
     }
+    //public enum PeriodoParcelamento { Mensal, Quinzenal, Semanal }
 
     // --- MÉTODOS AUXILIARES DE AMBIENTE ---
 
@@ -104,6 +105,76 @@ public class SicoobService : ISicoobService
 
     // --- MÉTODOS DE AÇÃO (INCLUIR, CONSULTAR, BAIXAR) ---
 
+    public async Task<List<BoletoResponse>> GerarLoteBoletosAsync(
+    int? notaId,
+    BoletoRequest requestBase,
+    int totalParcelas,
+    PeriodoParcelamento periodo)
+    {
+        var resultados = new List<BoletoResponse>();
+        decimal valorTotalOriginal = requestBase.Valor;
+
+        // 1. Cálculo matemático das parcelas (Tratando centavos)
+        decimal valorParcelaBase = Math.Floor((valorTotalOriginal / totalParcelas) * 100) / 100;
+        decimal sobraCentavos = valorTotalOriginal - (valorParcelaBase * totalParcelas);
+
+        // Pegamos a data do primeiro vencimento que o usuário escolheu na tela
+        DateTime dataVencimentoReferencia = DateTime.Parse(requestBase.DataVencimento);
+
+        for (int i = 1; i <= totalParcelas; i++)
+        {
+            DateTime vencimentoParcela = dataVencimentoReferencia.AddMonths(i - 1);
+            string dataMultaParcela = vencimentoParcela.AddDays(1).ToString("yyyy-MM-dd");
+
+            var usarSandbox = _config.GetValue<bool>("SicoobConfig:UsarSandbox");
+
+            // 2. Criamos uma cópia da requisição para cada parcela
+            var requestParcela = new BoletoRequest
+            {
+                NumeroCliente = requestBase.NumeroCliente,
+                NumeroContaCorrente = requestBase.NumeroContaCorrente,
+                Pagador = requestBase.Pagador,
+                GerarPdf = true,
+
+                // Atribui o número da parcela (1, 2, 3...)
+                NumeroParcela = i,
+
+                // Valor da parcela + sobra dos centavos apenas na primeira
+                Valor = (i == 1) ? (valorParcelaBase + sobraCentavos) : valorParcelaBase,
+
+                // Lógica de Data baseada no Período
+                DataVencimento = usarSandbox ? "2018-09-20" : CalcularVencimento(dataVencimentoReferencia, i, periodo),
+                DataMulta = usarSandbox ? "2018-09-20" : dataMultaParcela,
+                DataJurosMora = usarSandbox ? "2018-09-20" : dataMultaParcela,
+
+                DataEmissao = usarSandbox ? "2018-09-20" : requestBase.DataEmissao,
+
+                // O "SeuNumero" precisa ser único para o Sicoob não rejeitar duplicidade
+                SeuNumero = $"{requestBase.SeuNumero}/{i:D2}"
+            };
+
+            // 3. Chama a função que já existe para registrar no banco e no Postgres
+            var response = await IncluirBoletoAsync(notaId, requestParcela);
+
+            if (response != null) resultados.Add(response);
+        }
+
+        return resultados;
+    }
+
+    // Função auxiliar para as datas
+    private string CalcularVencimento(DateTime baseDate, int parcela, PeriodoParcelamento periodo)
+    {
+        DateTime novaData = periodo switch
+        {
+            PeriodoParcelamento.Mensal => baseDate.AddMonths(parcela - 1),
+            PeriodoParcelamento.Quinzenal => baseDate.AddDays((parcela - 1) * 15),
+            PeriodoParcelamento.Semanal => baseDate.AddDays((parcela - 1) * 7),
+            _ => baseDate
+        };
+        return novaData.ToString("yyyy-MM-ddT00:00:00-03:00");
+    }
+
     public async Task<BoletoResponse?> IncluirBoletoAsync(int? notaFiscalEmitidaDbId, BoletoRequest request)
     {
         if (request.Valor <= 0)
@@ -179,6 +250,7 @@ public class SicoobService : ISicoobService
                 CodigoBarras = boletoGerado.Resultado.CodigoBarras,
                 QrCodePix = boletoGerado.Resultado.QrCode,
                 Valor = boletoGerado.Resultado.Valor,
+                NumeroParcela = request.NumeroParcela,
                 DataVencimento = dataVenc,
                 DataCadastro = DateTime.UtcNow,
                 PdfBase64 = pdfFinal,
