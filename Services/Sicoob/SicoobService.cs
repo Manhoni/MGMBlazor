@@ -5,6 +5,7 @@ using MGMBlazor.Domain.Entities;
 using MGMBlazor.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
 
 namespace MGMBlazor.Services.Sicoob;
 
@@ -55,11 +56,11 @@ public class SicoobService : ISicoobService
 
         if (!string.IsNullOrEmpty(_accessToken) && DateTime.Now < _tokenExpiration.AddSeconds(-30))
         {
-            Console.WriteLine("[DEBUG-SICOOB] Produção: Reutilizando Token ainda válido.");
+            Console.WriteLine("Produção: Reutilizando Token ainda válido.");
             return;
         }
 
-        Console.WriteLine("[DEBUG-SICOOB] Produção: Iniciando requisição de Token via mTLS (Certificado)...");
+        Console.WriteLine("Produção Sicoob: Iniciando requisição de Token via mTLS (Certificado)...");
 
         var requestBody = new FormUrlEncodedContent(new[]
         {
@@ -73,7 +74,7 @@ public class SicoobService : ISicoobService
         if (!response.IsSuccessStatusCode)
         {
             var erro = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"[DEBUG-SICOOB] ERRO ao obter token: {erro}");
+            Console.WriteLine($"ERRO ao obter token: {erro}");
             response.EnsureSuccessStatusCode();
         }
 
@@ -82,7 +83,7 @@ public class SicoobService : ISicoobService
         _accessToken = doc.RootElement.GetProperty("access_token").GetString();
         _tokenExpiration = DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32());
 
-        Console.WriteLine("[DEBUG-SICOOB] Produção: Token obtido com sucesso!");
+        Console.WriteLine("Produção Sicoob: Token obtido com sucesso!");
     }
 
     private void SetDefaultHeaders()
@@ -172,7 +173,7 @@ public class SicoobService : ISicoobService
             PeriodoParcelamento.Semanal => baseDate.AddDays((parcela - 1) * 7),
             _ => baseDate
         };
-        return novaData.ToString("yyyy-MM-ddT00:00:00-03:00");
+        return novaData.ToString("yyyy-MM-dd");
     }
 
     public async Task<BoletoResponse?> IncluirBoletoAsync(int? notaFiscalEmitidaDbId, BoletoRequest request)
@@ -190,18 +191,19 @@ public class SicoobService : ISicoobService
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             PropertyNameCaseInsensitive = true,
-            WriteIndented = false
+            WriteIndented = false,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
         // --- json para DEBUG ---
-        string jsonParaEnviar = JsonSerializer.Serialize(request, options);
-        Console.WriteLine("\n[DEBUG-SICOOB] JSON QUE O C# ESTÁ GERANDO:");
-        Console.WriteLine(jsonParaEnviar);
-        Console.WriteLine("-------------------------------------------\n");
+        // string jsonParaEnviar = JsonSerializer.Serialize(request, options);
+        // Console.WriteLine("\n[DEBUG-SICOOB] JSON QUE O C# ESTÁ GERANDO:");
+        // Console.WriteLine(jsonParaEnviar);
+        // Console.WriteLine("-------------------------------------------\n");
         // ----------------------------------------
 
         string url = $"{GetBaseUrl()}/boletos";
-        Console.WriteLine($"[DEBUG-SICOOB] Enviando inclusão de boleto para: {url}");
+        //Console.WriteLine($"[DEBUG-SICOOB] Enviando inclusão de boleto para: {url}");
 
         // O Sicoob V3 exige envio em Array []
         var response = await _httpClient.PostAsJsonAsync(url, request, options);
@@ -209,7 +211,7 @@ public class SicoobService : ISicoobService
         if (!response.IsSuccessStatusCode)
         {
             var erro = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"[DEBUG-SICOOB] ERRO na inclusão ({response.StatusCode}): {erro}");
+            Console.WriteLine($"ERRO na inclusão ({response.StatusCode}): {erro}");
             throw new Exception($"Erro Sicoob: {erro}");
         }
 
@@ -219,7 +221,7 @@ public class SicoobService : ISicoobService
         {
             using var _dbContext = await _factory.CreateDbContextAsync();
 
-            Console.WriteLine($"[DEBUG-SICOOB] Sucesso! Nosso Número: {boletoGerado.Resultado.NossoNumero}");
+            Console.WriteLine($"Sucesso! Nosso Número: {boletoGerado.Resultado.NossoNumero}");
 
             // Tratamento de Data para o Postgres (Tryparse para não quebrar com string vazia)
             DateTime dataVenc = DateTime.Now;
@@ -260,7 +262,7 @@ public class SicoobService : ISicoobService
 
             _dbContext.Cobrancas.Add(novaCobranca);
             await _dbContext.SaveChangesAsync();
-            Console.WriteLine($"[DEBUG-SICOOB] Cobrança salva no banco vinculada à Nota ID {notaFiscalEmitidaDbId}.");
+            Console.WriteLine($"Cobrança salva no banco vinculada à Nota ID {notaFiscalEmitidaDbId}.");
         }
 
         return boletoGerado;
@@ -274,7 +276,7 @@ public class SicoobService : ISicoobService
         var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
         var url = $"{GetBaseUrl()}/boletos?numeroCliente={numeroCliente}&codigoModalidade=1&nossoNumero={nossoNumero}";
 
-        Console.WriteLine($"[DEBUG-SICOOB] Consultando boleto: {nossoNumero}");
+        Console.WriteLine($"Produção Sicoob: Consultando boleto: {nossoNumero}");
         return await _httpClient.GetFromJsonAsync<BoletoResponse>(url);
     }
 
@@ -286,7 +288,7 @@ public class SicoobService : ISicoobService
         long numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
         var body = new { numeroCliente = numeroCliente, codigoModalidade = 1 };
 
-        Console.WriteLine($"[DEBUG-SICOOB] Solicitando baixa do boleto: {nossoNumero}");
+        Console.WriteLine($"Produção Sicoob: Solicitando baixa do boleto: {nossoNumero}");
         var response = await _httpClient.PostAsJsonAsync($"{GetBaseUrl()}/boletos/{nossoNumero}/baixar", body);
 
         if (response.IsSuccessStatusCode)
@@ -297,7 +299,7 @@ public class SicoobService : ISicoobService
             {
                 cobranca.Status = "Baixado";
                 await _dbContext.SaveChangesAsync();
-                Console.WriteLine("[DEBUG-SICOOB] Baixa efetuada com sucesso no Sicoob e no Postgres.");
+                Console.WriteLine("Baixa efetuada com sucesso no Sicoob e no Postgres.");
             }
         }
         return response.IsSuccessStatusCode;

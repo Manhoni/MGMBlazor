@@ -80,7 +80,7 @@ public class NfseService : INfseService
     {
         using var context = await _factory.CreateDbContextAsync();
 
-        Console.WriteLine($"[CONSULTA] Verificando RPS {rpsNumero}...");
+        Console.WriteLine($"Verificando RPS {rpsNumero}...");
 
         var resposta = new RespostaEmissao(); // Cria o objeto que será preenchido
 
@@ -105,11 +105,11 @@ public class NfseService : INfseService
             // 6. Processa preenchendo o objeto 'resposta' (Seu padrão void Processar)
             _retornoParser.Processar(xmlRespostaSoap, resposta);
 
-            if (resposta.Erros.Any()) Console.WriteLine("[DEBUG-CONSULTA] Erros no Parser: " + string.Join(", ", resposta.Erros));
+            if (resposta.Erros.Any()) Console.WriteLine("Erros no Parser: " + string.Join(", ", resposta.Erros));
 
             if (resposta.Sucesso)
             {
-                Console.WriteLine($"[CONSULTA] RPS {rpsNumero} já é a Nota {resposta.NumeroNota}. Sincronizando banco...");
+                Console.WriteLine($"RPS {rpsNumero} já é a Nota {resposta.NumeroNota}. Sincronizando banco...");
 
                 var notaDb = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.RpsNumero == rpsNumero);
 
@@ -125,7 +125,7 @@ public class NfseService : INfseService
                     //notaDb.NumeroNota = resposta.NumeroNota;
                     notaDb.XmlRetorno = resposta.XmlRetorno;
                     await context.SaveChangesAsync();
-                    Console.WriteLine($"[BANCO] Status da nota {resposta.NumeroNota} sincronizado para: {notaDb.Status}");
+                    Console.WriteLine($"Status da nota {resposta.NumeroNota} sincronizado para: {notaDb.Status}");
                 }
             }
         }
@@ -220,16 +220,19 @@ public class NfseService : INfseService
                       ? resposta.StatusRecuperado
                       : status;
 
+        var linkPdef = GerarLinkConsultaPublica(resposta.NumeroNota!, resposta.CodigoVerificacao!);
+
         var notaEmitida = new NotaFiscalEmitida
         {
             RpsNumero = nota.Id, // Grava o número do RPS que acabamos de usar
-            VendaId = 100, // tanto faz a empresa que escolhe (preciso acertar a logica para que ela seja inserida pelo usuario e volte pelo Response)
+            VendaId = 100, // tanto faz a empresa que escolhe (logica para que ela seja inserida pelo usuario e volte pelo Response)
             Valor = nota.Valor,
             CnpjTomador = nota.Tomador.Cnpj,
             DataEmissao = DateTime.UtcNow,
             NumeroNota = resposta.NumeroNota,
             CodigoVerificacao = resposta.CodigoVerificacao,
             XmlRetorno = resposta.XmlRetorno,
+            //LinkPdf = linkPdef,  optei por não salvar o link pois se mudar a forma que ele é gerado pela prefeitura, só altero na função que o gera e sempre chamo a função, evitando confusões futuras
             Status = statusFinal
         };
 
@@ -237,7 +240,7 @@ public class NfseService : INfseService
         await context.SaveChangesAsync();
 
         resposta.IdInternoNoBanco = notaEmitida.Id;
-        Console.WriteLine($"[BANCO] Nota {resposta.NumeroNota} salva com sucesso!");
+        Console.WriteLine($"Nota {resposta.NumeroNota} salva com sucesso!");
     }
 
     public async Task<RespostaEmissao> CancelarNotaAsync(string numeroNota, string codigoMotivo = "1")
@@ -260,14 +263,14 @@ public class NfseService : INfseService
 
             if (resposta.Sucesso)
             {
-                Console.WriteLine($"[BANCO] Nota {numeroNota} cancelada");
+                Console.WriteLine($"Nota {numeroNota} cancelada");
                 //Atualize o status no banco para Cancelada
                 var notaCancelada = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroNota);
                 if (notaCancelada != null)
                 {
                     // Chamamos a consulta por RPS.
                     // Esse método já vai baixar o XML COMPLETO e atualizar o Status no banco local.
-                    Console.WriteLine($"[BANCO] Nota {numeroNota} cancelada e sendo sincronizada com o banco...");
+                    Console.WriteLine($"Nota {numeroNota} cancelada e sendo sincronizada com o banco...");
                     await VerificarSeRpsJaExisteNaPrefeitura(notaCancelada.RpsNumero);
                 }
             }
@@ -304,7 +307,7 @@ public class NfseService : INfseService
                 {
                     notaAntigaDb.Status = StatusNfse.Cancelada;
                     context.NotasFiscaisEmitidas.Update(notaAntigaDb);
-                    Console.WriteLine($"[BANCO] Nota antiga {numeroAntiga} marcada como Cancelada.");
+                    Console.WriteLine($"Nota antiga {numeroAntiga} marcada como Cancelada.");
                     await context.SaveChangesAsync();
                 }
 

@@ -73,6 +73,7 @@ public class AbrasfXmlBuilder
                 )
             ),
 
+            new XElement(Ns + "RegimeEspecialTributacao", _options.Prestador.RegimeEspecialTributacao),
             new XElement(Ns + "OptanteSimplesNacional", 1),
             new XElement(Ns + "IncentivoFiscal", 2)
         );

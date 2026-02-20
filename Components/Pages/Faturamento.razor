@@ -289,7 +289,7 @@
 
             try
             {
-                  // 1. CONSULTA DE SEGURANÇA (O que você pediu)
+                  // CONSULTA DE RPS
                   int rpsCandidato = await NfseService.ObterProximoNumeroRpsAsync();
                   statusTeste = $"Consultando se RPS {rpsCandidato} está livre...";
 
@@ -302,7 +302,7 @@
                         return;
                   }
 
-                  // 2. EMISSÃO REAL
+                  // EMISSÃO REAL
                   statusTeste = $"Emitindo Nota Fiscal para RPS {rpsCandidato}...";
                   var servico = servicos.First(s => s.Id == servicoSelecionadoId);
 
@@ -395,8 +395,8 @@
                         Valor = resumo!.ValorTotal,
                         NumeroParcela = numeroParcela,
                         SeuNumero = "MGM-" + seuNumero,
-                        DataEmissao = usarSandbox ? "2018-09-20" : DateTime.Now.ToString("yyyy-MM-ddT00:00:00-03:00"),
-                        DataVencimento = usarSandbox ? "2018-09-20" : dataVencimentoBoleto.ToString("yyyy-MM-ddT00:00:00-03:00"),
+                        DataEmissao = usarSandbox ? "2018-09-20" : DateTime.Now.ToString("yyyy-MM-dd"),
+                        DataVencimento = usarSandbox ? "2018-09-20" : dataVencimentoBoleto.ToString("yyyy-MM-dd"),
                         DataMulta = usarSandbox ? "2018-09-20" : dataCobranca,
                         DataJurosMora = usarSandbox ? "2018-09-20" : dataCobranca,
                         Pagador = new PagadorRequest
@@ -406,6 +406,7 @@
                               Endereco = enderecoBoleto,
                               Cidade = cidadeBoleto,
                               Cep = cepBoleto,
+                              Bairro = bairroBoleto,
                               Uf = ufBoleto
                         },
                         GerarPdf = true
@@ -415,7 +416,7 @@
 
                   if (numeroParcela > 1)
                   {
-                        Console.WriteLine($"[DEBUG-FRONT] Entrou na geração de lote para {numeroParcela} parcelas, período: {periodoSelecionado}");
+                        Console.WriteLine($"Entrou na geração de lote para {numeroParcela} parcelas, período: {periodoSelecionado}");
                         // CHAMA O NOVO MÉTODO DE LOTE
                         var resultados = await SicoobService.GerarLoteBoletosAsync(
                         respostaNfse!.IdInternoNoBanco, 
@@ -449,8 +450,8 @@
                   {
                         var resp = await SicoobService.IncluirBoletoAsync(respostaNfse!.IdInternoNoBanco, boletoReq);
 
-                        Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto)}");
-                        Console.WriteLine($"[DEBUG-FRONT] Tamanho do PDF: {resp?.Resultado?.PdfBoleto?.Length ?? 0}");
+                        //Console.WriteLine($"[DEBUG-FRONT] PDF Recebido? {!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto)}");
+                        Console.WriteLine($"Tamanho do PDF: {resp?.Resultado?.PdfBoleto?.Length ?? 0}");
 
                         if (resp?.Resultado?.PdfBoleto != null)
                         {

@@ -67,15 +67,18 @@ public class BoletoRequest
     [JsonPropertyName("mensagensInstrucao")]
     public List<string> MensagensInstrucao { get; set; } = new List<string>
     {
-        "Após o vencimento cobrar multa de 2%",
-        "Após o vencimento cobrar juros de 1% ao mês"
+        "Apos vencimento multa de 2%",
+        "Apos vencimento juros de 1% ao mes"
     };
-
-    [JsonPropertyName("numeroContratoCobranca")]
-    public long NumeroContratoCobranca { get; set; } = 1;
 
     [JsonPropertyName("gerarPdf")]
     public bool GerarPdf { get; set; } = true;
+
+    [JsonPropertyName("codigoCadastrarPIX")]
+    public int CodigoCadastrarPIX { get; set; } = 2; //2 - não cadastrar, 1 cadastrar
+
+    [JsonPropertyName("numeroContratoCobranca")]
+    public int? NumeroContratoCobranca { get; set; }
 }
 
 public class BeneficiarioRequest

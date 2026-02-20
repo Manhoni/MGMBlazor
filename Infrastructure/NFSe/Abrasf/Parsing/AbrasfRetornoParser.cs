@@ -34,8 +34,8 @@ public class AbrasfRetornoParser : INfseRetornoParser
                 return;
             }
 
-            // --- DEBUG: Remova esta linha depois que funcionar ---
-            Console.WriteLine("DEBUG XML INTERNO: " + resultadoRaw);
+            // --- DEBUG ---
+            //Console.WriteLine("DEBUG XML INTERNO: " + resultadoRaw);
 
             var xmlInterno = XDocument.Parse(resultadoRaw);
 
@@ -72,7 +72,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
             if (cancelamento != null)
             {
                 resposta.Sucesso = true;
-                Console.WriteLine("[DEBUG-PARSER] Cancelamento confirmado pela prefeitura.");
+                Console.WriteLine("Cancelamento confirmado pela prefeitura.");
                 return;
             }
 
@@ -80,7 +80,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
             {
                 // Se for substituição, pegamos a nota nova que está dentro de NfseSubstituidora
                 infNfse = nfseSubstituidora.Descendants().FirstOrDefault(x => x.Name.LocalName == "InfNfse");
-                Console.WriteLine("[DEBUG-PARSER] Detectada Substituição. Pegando dados da nota NOVA.");
+                Console.WriteLine("Detectada Substituição. Pegando dados da nota NOVA.");
             }
             else
             {
@@ -102,7 +102,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
 
                 if (temCancelamento /*|| statusPrefeitura == "2"*/)
                 {
-                    Console.WriteLine("[DEBUG-PARSER] Esta nota consta como CANCELADA na prefeitura.");
+                    Console.WriteLine("Esta nota consta como CANCELADA na prefeitura.");
                     resposta.StatusRecuperado = StatusNfse.Cancelada;
                 }
                 else
