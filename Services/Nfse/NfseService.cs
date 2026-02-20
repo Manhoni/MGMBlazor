@@ -184,7 +184,7 @@ public class NfseService : INfseService
             resposta.XmlEnviado = xmlAssinado;
 
             // GRAVA O ARQUIVO PARA COPIAR PARA O POSTMAN
-            File.WriteAllText("nota_assinada.xml", xmlAssinado);
+            //File.WriteAllText("nota_assinada.xml", xmlAssinado);
 
             // Limpa a declaração XML interna que Maringá não gosta
             string xmlSemDeclaracao = xmlAssinado.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", "");
@@ -192,7 +192,7 @@ public class NfseService : INfseService
             // Escapa o XML programaticamente (transforma < em &lt;)
             string xmlParaPostman = System.Security.SecurityElement.Escape(xmlSemDeclaracao);
 
-            File.WriteAllText("CONTEUDO_PARA_POSTMAN.txt", xmlParaPostman);
+            //File.WriteAllText("CONTEUDO_PARA_POSTMAN.txt", xmlParaPostman);
 
             string xmlRetorno = await _soapClient.EnviarGerarNfseAsync(xmlAssinado, certificado);
 

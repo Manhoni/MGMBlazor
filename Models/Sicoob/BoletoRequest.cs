@@ -53,7 +53,7 @@ public class BoletoRequest
     public string? DataJurosMora { get; set; }
 
     [JsonPropertyName("valorJurosMora")]
-    public decimal ValorJurosMora { get; set; } = 1.00m;
+    public decimal ValorJurosMora { get; set; } = 0.90m;
 
     [JsonPropertyName("numeroParcela")]
     public int NumeroParcela { get; set; } = 1;
@@ -67,8 +67,9 @@ public class BoletoRequest
     [JsonPropertyName("mensagensInstrucao")]
     public List<string> MensagensInstrucao { get; set; } = new List<string>
     {
-        "Apos vencimento multa de 2%",
-        "Apos vencimento juros de 1% ao mes"
+        "Após vencimento multa de 2%",
+        "Após vencimento juros de 0,03%/dia",
+        "Não conceder desconto."
     };
 
     [JsonPropertyName("gerarPdf")]
