@@ -12,6 +12,8 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject AuditLogService AuditLog
+@inject AuthenticationStateProvider AuthProvider
 
 <PageTitle>Nova Nota Fiscal Avulsa</PageTitle>
 
@@ -287,6 +289,12 @@
             
             if (respostaNfse.Sucesso) {
                 // Sincroniza campos se necessário
+                var authState = await AuthProvider.GetAuthenticationStateAsync();
+                var usuario = authState.User.Identity?.Name ?? "Sistema";
+
+                string detalhes = $"NF: {respostaNfse.NumeroNota} | Cliente: {nota.Tomador.RazaoSocial} | Valor: {nota.Valor:C2}";
+                
+                await AuditLog.RegistrarLogAsync(usuario, "Emissão de Nota Avulsa", detalhes, "Nota Avulsa");
             }
         }
         catch (Exception ex)

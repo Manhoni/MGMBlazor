@@ -13,6 +13,8 @@
 @inject IConfiguration config
 @inject CepService CepService
 @inject EmailService EmailService
+@inject AuthenticationStateProvider AuthProvider
+@inject AuditLogService AuditLog
 
 <div class="container mt-4" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <!-- Header MGM -->
@@ -277,6 +279,9 @@
 
       private async Task GerarFaturamento()
       {
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var nomeUsuario = authState.User.Identity?.Name ?? "Sistema";
+
             if (resumo == null || servicoSelecionadoId == 0)
             {
                   statusTeste = "⚠️ Selecione o serviço antes de continuar.";
@@ -334,6 +339,13 @@
                         linkNota = NfseService.GerarLinkConsultaPublica(respostaNfse.NumeroNota!, respostaNfse.CodigoVerificacao!);
                         notaGeradaComSucesso = true;
                         statusTeste = "✅ Processo concluído!";
+
+                        await AuditLog.RegistrarLogAsync(
+                        nomeUsuario, 
+                        "Emissão de NFSe", 
+                        $"Nota: {respostaNfse.NumeroNota} | Valor: {resumo.ValorTotal}", 
+                        "Faturamento"
+                        );
                   }
                   else
                   {
@@ -343,6 +355,7 @@
             catch (Exception ex)
             {
                   statusTeste = "💥 Erro crítico: " + ex.Message;
+                  await AuditLog.RegistrarLogAsync(nomeUsuario, "Falha na Emissão", ex.Message, "Faturamento");
             }
             finally { processando = false; }
       }
@@ -380,6 +393,8 @@
                   statusTeste = "❌ Preencha o endereço e CEP para o boleto.";
                   return;
             }
+
+            long? nossoNumeroParaLog = null; // Variável para capturar o ID do boleto único
 
             processando = true;
             try
@@ -455,6 +470,8 @@
 
                         if (resp?.Resultado?.PdfBoleto != null)
                         {
+                              nossoNumeroParaLog = resp.Resultado.NossoNumero; // Captura o NossoNúmero para o log de auditoria
+
                               anexosEmail.Add(new BoletoAnexo { 
                                     Base64 = resp.Resultado.PdfBoleto, 
                                     NumeroParcela = 1 
@@ -495,6 +512,16 @@
                         {
                               statusTeste = "⚠️ Nota e Boleto OK, mas o E-MAIL falhou. Verifique a configuração do serviço de e-mail.";
                         }
+
+                        var authState = await AuthProvider.GetAuthenticationStateAsync();
+                        var usuario = authState.User.Identity?.Name ?? "Sistema";
+
+                        // Se for Lote, detalhes mostram a quantidade. Se for único, mostra o NossoNúmero.
+                        string detalhes = numeroParcela > 1 
+                              ? $"Gerado Lote de {numeroParcela} parcelas | Valor Total: {resumo.ValorTotal:C2}"
+                              : $"Gerado Boleto Único | NossoNro: {nossoNumeroParaLog} | Valor: {resumo.ValorTotal:C2}";
+
+                        await AuditLog.RegistrarLogAsync(usuario, "Geração de Boleto", detalhes, "Faturamento");
                   }
             }
             catch (Exception ex)

@@ -12,6 +12,8 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @inject IConfiguration config
+@inject AuditLogService AuditLog
+@inject AuthenticationStateProvider AuthProvider
 
 <PageTitle>Novo Boleto Avulso</PageTitle>
 
@@ -204,6 +206,8 @@
     {
         if (valorBoleto <= 0) { statusMsg = "Erro: Valor deve ser maior que zero."; return; }
 
+        long? nossoNumeroLog = null;
+
         processando = true;
         try
         {
@@ -277,6 +281,7 @@
 
                 if (resp?.Resultado?.PdfBoleto != null)
                 {
+                    nossoNumeroLog = resp.Resultado.NossoNumero;
                     anexosEmail.Add(new BoletoAnexo { 
                         Base64 = resp.Resultado.PdfBoleto, 
                         NumeroParcela = 1 
@@ -298,6 +303,16 @@
             }
             if (boletoGerado)
             {
+                // REGISTRO DE LOG
+                var authState = await AuthProvider.GetAuthenticationStateAsync();
+                var usuario = authState.User.Identity?.Name ?? "Sistema";
+
+                string detalhes = numeroParcela > 1 
+                    ? $"Lote de {numeroParcela} parcelas | Cliente: {pagador.RazaoSocial} | Total: {valorBoleto:C2}"
+                    : $"Boleto Único | NossoNro: {nossoNumeroLog} | Cliente: {pagador.RazaoSocial} | Valor: {valorBoleto:C2}";
+
+                await AuditLog.RegistrarLogAsync(usuario, "Geração de Boleto Avulso", detalhes, "Boleto Avulso");
+                
                 @* statusMsg = "✅ Boleto gerado! Enviando e-mail para o cliente...";
                 StateHasChanged();
 

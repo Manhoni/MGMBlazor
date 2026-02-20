@@ -7,6 +7,8 @@
 @inject IDbContextFactory<AppDbContext> DbFactory 
 @inject IJSRuntime JS
 @inject NavigationManager Nav
+@inject AuditLogService AuditLog
+@inject AuthenticationStateProvider AuthProvider
 
 <div class="container-fluid mt-3">
       <div

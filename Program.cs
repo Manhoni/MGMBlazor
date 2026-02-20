@@ -378,6 +378,7 @@ builder.Services.AddAuthenticationCore();
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<IClienteService, ClienteService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddScoped<AuditLogService>();
 
 // Adiciona os serviços de autenticação e autorização padrão do .NET
 builder.Services.AddCascadingAuthenticationState();

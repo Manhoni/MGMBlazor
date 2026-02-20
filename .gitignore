@@ -30,6 +30,7 @@ secrets.json
 .env.*
 server_config.json
 local_settings.json
+deploy.sh
 
 ## --- CERTIFICADOS E CHAVES (SEGURANÇA MÁXIMA) ---
 # Bloqueia as extensões em qualquer lugar do projeto

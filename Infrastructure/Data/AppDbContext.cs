@@ -14,6 +14,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     // Se você quiser salvar os detalhes dos serviços e da nota bruta, adicione-os aqui:
     public DbSet<Servico> Servicos { get; set; }
     public DbSet<Cobranca> Cobrancas { get; set; }
+    public DbSet<LogAuditoria> LogsAuditoria { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

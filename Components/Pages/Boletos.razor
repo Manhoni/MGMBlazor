@@ -5,6 +5,8 @@
 @inject ISicoobService SicoobService
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject IJSRuntime JS
+@inject AuditLogService AuditLog
+@inject AuthenticationStateProvider AuthProvider
 
 <div class="container-fluid mt-3">
       <!-- CABEÇALHO -->
@@ -162,7 +164,7 @@
             if (result?.Resultado != null)
             {
                   using var context = await DbFactory.CreateDbContextAsync();
-                  cob.Status = result.Resultado.SituacaoBoleto ?? "Pendente";
+                  cob.Status = result.Resultado.SituacaoBoleto ?? cob.Status;
                   context.Cobrancas.Update(cob);
                   await context.SaveChangesAsync();
                   await CarregarBoletos();
@@ -191,7 +193,20 @@
             if (confirm)
             {
                   var ok = await SicoobService.BaixarBoletoAsync(cob.NossoNumero);
-                  if (ok) await CarregarBoletos();
+                  if (ok) 
+                  {
+                        await CarregarBoletos();
+
+                        var authState = await AuthProvider.GetAuthenticationStateAsync();
+                        var usuario = authState.User.Identity?.Name ?? "Sistema";
+
+                        await AuditLog.RegistrarLogAsync(
+                              usuario, 
+                              "Baixa de Boleto", 
+                              $"Boleto: {cob.NossoNumero} | Valor: {cob.Valor:C2} | Status: Baixado manualmente", 
+                              "Boletos"
+                        );
+                  }
                   else await JS.InvokeVoidAsync("alert", "Falha ao realizar a baixa no Sicoob.");
             }
       }
@@ -202,18 +217,21 @@
             if (cob.Status == "Baixado") return "bg-danger";
 
             // Se está pendente mas a data de vencimento já passou
-            if (cob.Status == "Pendente" && cob.DataVencimento.Date < DateTime.Today)
+            if (cob.Status == "Em Aberto" || cob.Status == "Pendente")
             {
-                  return "bg-danger"; // Vermelho para atrasado
-            }
+                  // Se está aberto mas o vencimento passou
+                  if (cob.DataVencimento.Date < DateTime.Today)
+                        return "bg-danger"; // Vermelho para atrasado
 
-            return "bg-warning text-dark"; // Amarelo para pendente no prazo
+                  return "bg-warning text-dark"; // Amarelo para no prazo
+            }
+            return "bg-secondary";
       }
 
       // Para exibir o texto "Atrasado" em vez de "Pendente"
       private string GetStatusTexto(Cobranca cob)
       {
-            if (cob.Status == "Pendente" && cob.DataVencimento.Date < DateTime.Today)
+            if ((cob.Status == "Pendente" || cob.Status == "Em Aberto") && cob.DataVencimento.Date < DateTime.Today)
                   return "Atrasado";
 
             return cob.Status;
