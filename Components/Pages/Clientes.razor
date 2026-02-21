@@ -276,7 +276,7 @@
             }
             catch (Exception ex)
             {
-                  mensagem = "❌ Erro ao salvar: " + ex.Message;
+                  mensagem = "❌ Erro ao salvar: " + ex.InnerException?.Message ?? ex.Message;
             }
       }
 

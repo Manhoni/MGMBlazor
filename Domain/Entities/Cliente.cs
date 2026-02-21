@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace MGMBlazor.Domain.Entities;
 
+[Index(nameof(Cnpj), IsUnique = true)]
 public class Cliente
 {
     public int Id { get; set; }
