@@ -276,8 +276,34 @@ public class SicoobService : ISicoobService
         var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
         var url = $"{GetBaseUrl()}/boletos?numeroCliente={numeroCliente}&codigoModalidade=1&nossoNumero={nossoNumero}";
 
-        Console.WriteLine($"Produção Sicoob: Consultando boleto: {nossoNumero}");
-        return await _httpClient.GetFromJsonAsync<BoletoResponse>(url);
+        Console.WriteLine($"[DEBUG-SICOOB] Consultando boleto: {nossoNumero}");
+
+        // 1. Faz a chamada e pega a resposta bruta
+        var response = await _httpClient.GetAsync(url);
+        var jsonRaw = await response.Content.ReadAsStringAsync();
+
+        // 2. IMPRIME O JSON NO CONSOLE (O seu "dotnet watch" do servidor)
+        Console.WriteLine("-------------------------------------------");
+        Console.WriteLine($"[DEBUG-SICOOB] JSON RECEBIDO DO BANCO:");
+        Console.WriteLine(jsonRaw);
+        Console.WriteLine("-------------------------------------------");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"[ERRO SICOOB] Falha na consulta: {response.StatusCode}");
+            return null;
+        }
+
+        // 3. Converte o JSON para o objeto C# usando as opções de camelCase
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        return JsonSerializer.Deserialize<BoletoResponse>(jsonRaw, options);
+
+        // Minha função que funcionava
+        // var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
+        // var url = $"{GetBaseUrl()}/boletos?numeroCliente={numeroCliente}&codigoModalidade=1&nossoNumero={nossoNumero}";
+
+        // Console.WriteLine($"Produção Sicoob: Consultando boleto: {nossoNumero}");
+        // return await _httpClient.GetFromJsonAsync<BoletoResponse>(url);
     }
 
     public async Task<bool> BaixarBoletoAsync(long nossoNumero)

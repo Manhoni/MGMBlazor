@@ -163,6 +163,15 @@
             var result = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
             if (result?.Resultado != null)
             {
+                  string novoStatus = result.Resultado.SituacaoBoleto ?? "Em Aberto";
+
+                  // REGRA DE PROTEÇÃO: 
+                  if ((cob.Status == "Liquidado" || cob.Status == "Pago") && novoStatus == "Em Aberto")
+                  {
+                        Console.WriteLine("[AVISO] API retornou 'Em Aberto' para um boleto já pago. Ignorando atualização.");
+                        return; 
+                  }
+
                   using var context = await DbFactory.CreateDbContextAsync();
                   cob.Status = result.Resultado.SituacaoBoleto ?? cob.Status;
                   context.Cobrancas.Update(cob);
