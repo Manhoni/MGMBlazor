@@ -3,14 +3,14 @@
 > Sistema web para automação de geração de boletos bancários e notas fiscais de serviço (NFS-e) para empresa de medicina ocupacional.
 
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow)](https://github.com/seu-usuario/sistema-mgm)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Produção-success)](https://github.com/Manhoni/MGMBlazor)
 
 ---
 
 ## 📋 Sobre o Projeto
 
-Sistema desenvolvido para automatizar processos manuais repetitivos em uma empresa de medicina do trabalho, reduzindo tempo e erros operacionais.
+Sistema desenvolvido para automatizar processos manuais repetitivos em uma empresa de medicina do trabalho, reduzindo tempo e erros operacionais através de integrações diretas com órgãos municipais e bancários.
 
 ### Problema Resolvido
 
@@ -23,9 +23,9 @@ Anteriormente, o processo manual envolvia:
 
 ### Solução Implementada
 
-✅ Interface web unificada  
-✅ Integração com API bancária para geração automática de boletos  
-✅ Integração com sistema de NFS-e da prefeitura  
+✅ Interface web reativa e unificada  
+✅ Integração com API Sicoob V3 para geração automática de boletos. 
+✅ Integração com Webservices Municipais (Abrasf 2.01) via SOAP/XML com assinatura digital A1.
 ✅ Armazenamento de histórico e rastreabilidade  
 ✅ Tempo médio: **2-3 minutos por fatura**  
 ✅ **Redução de 85% no tempo de processamento**
@@ -34,68 +34,33 @@ Anteriormente, o processo manual envolvia:
 
 ## 🚀 Funcionalidades
 
-- [x] Cadastro de empresas clientes
-- [ ] Importação de dados de faturas
-- [ ] Geração automática de boletos via API bancária
-- [x] Emissão de NFS-e via webservice da prefeitura
-- [x] Exportação de relatórios
-- [ ] Notificações por email (em desenvolvimento)
-- [ ] Dashboard analítico (planejado)
+- [x] Cadastro de empresas clientes com busca automática via CEP (ViaCEP).
+- [x] Importação de dados de faturas via CSV.
+- [x] Geração automática de boletos via API Bancária.
+- [x] Emissão de NFS-e com validação XSD e Assinatura Digital (Certificado A1).
+- [x] Trilha de Auditoria (Logs detalhados de operações por usuário).
+- [x] Notificações por e-mail consolidadas (Nota + Boletos em anexo).
+- [ ] Dashboard analítico (planejado).
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
 ### Backend
-- **ASP.NET Core 8.0** - Framework web
-- **Entity Framework Core** - ORM
-- **PostgreSQL** - Banco de dados
-- **Dapper** - Queries otimizadas
+- **ASP.NET Core 8.0** - Framework principal.
+- **Entity Framework Core** - ORM com banco PostgreSQL.
+- **MailKit** - Motor de envio de e-mails SMTP.
+- **System.Security.Cryptography.Xml** - Assinatura digital de documentos fiscais.
 
 ### Frontend
-- **Razor Pages** - Views
-- **Bootstrap 5** - Interface responsiva
-- **JavaScript/jQuery** - Interatividade
-
-### Integrações
-- **API REST** - Integração bancária
-- **SOAP/XML** - Webservice NFS-e da prefeitura
-- **PDF Sharp** - Manipulação de PDFs
+- **Blazor Web App (Interactive Server)** - UI reativa.
+- **Bootstrap 5** - Interface responsiva.
+- **JavaScript Interop** - Manipulação de PDFs e recursos do navegador.
 
 ### Infraestrutura
-- **IIS** - Hospedagem em servidor local
-- **Zero Tier** - Acesso remoto seguro
-
----
-
-## 📦 Arquitetura
-
-```
-┌─────────────────────────────────────────────────┐
-│           Interface Web (Razor Pages)           │
-├─────────────────────────────────────────────────┤
-│                  API Controllers                │
-├────────────────┬────────────────┬───────────────┤
-│  Business Logic│   Services     │  Repositories │
-├────────────────┴────────────────┴───────────────┤
-│            Entity Framework Core                │
-├─────────────────────────────────────────────────┤
-│                  SQL Server                     │
-└─────────────────────────────────────────────────┘
-         ↓                    ↓
-   API Banco              API Prefeitura
-```
-
----
-
-## ⚙️ Configuração
-
-### Pré-requisitos
-
-- .NET SDK 8.0 ou superior
-- SQL Server 2019 ou superior (Express funciona)
-- Visual Studio 2022 ou VS Code com C# extension
-- Git
+- **Google Cloud Platform (GCP)** - Hospedagem em VM Ubuntu Minimal.
+- **Nginx** - Proxy reverso e gerenciamento de tráfego.
+- **PostgreSQL** - Persistência de dados robusta.
 
 ---
 
@@ -109,66 +74,11 @@ Este projeto **NÃO** versiona:
 - ❌ Chaves de API
 - ❌ Senhas ou tokens
 
-### Configuração de Credenciais
-
-**Para desenvolvimento local:**
-
-1. Copie `appsettings.example.json` para `appsettings.Development.json`
-2. Preencha com suas credenciais locais
-3. O `.gitignore` garante que não será commitado
-
-**Para produção:**
-
-Use **User Secrets** ou **variáveis de ambiente**:
-
-```bash
-# Configurar secrets
-dotnet user-secrets init
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "sua-string-aqui"
-dotnet user-secrets set "BancoAPI:ChaveAPI" "sua-chave-aqui"
-```
-
 ### LGPD e Compliance
 
-Este sistema lida com dados sensíveis (saúde ocupacional). Implementações:
-- Criptografia de dados em repouso
-- Logs de auditoria
-- Controle de acesso baseado em roles
-- Backup automático com retenção de 30 dias
-
----
-
-## 🧪 Testes
-
-```bash
-# Rodar testes unitários
-dotnet test
-
-# Com cobertura
-dotnet test /p:CollectCoverage=true
-```
-
----
-
-## 📊 Exemplo de Uso
-
-```csharp
-// Gerar boleto automaticamente
-var boleto = await _boletoService.GerarBoletoAsync(new BoletoRequest
-{
-    EmpresaId = empresaId,
-    Valor = 1500.00m,
-    DataVencimento = DateTime.Now.AddDays(10)
-});
-
-// Emitir NFS-e
-var nfse = await _nfseService.EmitirNotaAsync(new NfseRequest
-{
-    EmpresaId = empresaId,
-    ServicoId = servicoId,
-    Valor = 1500.00m
-});
-```
+- **Audit Logs**: Registro de "Quem, Quando e Onde" para todas as ações críticas.
+- **mTLS**: Comunicação segura com o banco via troca de certificados públicos/privados.
+- **Isolation**: Banco de dados fechado para acesso externo, operando apenas em localhost.
 
 ---
 
@@ -229,7 +139,7 @@ Link do Projeto: [https://github.com/Manhoni/MGMBlazor](https://github.com/Manho
 - [x] MVP - CRUD básico
 - [x] Integração bancária
 - [x] Integração prefeitura
-- [ ] Notificações por email
+- [x] Notificações por email
 - [ ] Dashboard analítico
 - [ ] App mobile (planejado para 2026)
 - [ ] IA para análise de padrões (futuro)
