@@ -76,7 +76,7 @@ public class BoletoRequest
     public bool GerarPdf { get; set; } = true;
 
     [JsonPropertyName("codigoCadastrarPIX")]
-    public int CodigoCadastrarPIX { get; set; } = 2; //2 - não cadastrar, 1 cadastrar
+    public int CodigoCadastrarPIX { get; set; } = 1; //2 - não cadastrar, 1 cadastrar
 
     [JsonPropertyName("numeroContratoCobranca")]
     public int? NumeroContratoCobranca { get; set; }

@@ -95,6 +95,13 @@ public class AbrasfRetornoParser : INfseRetornoParser
                 resposta.CodigoVerificacao = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "CodigoVerificacao")?.Value;
                 resposta.XmlRetorno = xmlInterno.ToString(); // Armazena o XML recuperado
 
+                var tomadorNode = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "Tomador");
+                resposta.CnpjTomadorRecuperado = tomadorNode?.Descendants().FirstOrDefault(x => x.Name.LocalName == "Cnpj")?.Value;
+
+                var valorStr = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "ValorServicos")?.Value;
+                if (decimal.TryParse(valorStr, System.Globalization.CultureInfo.InvariantCulture, out decimal v))
+                    resposta.ValorRecuperado = v;
+
                 var temCancelamento = xmlInterno.Descendants().Any(x => x.Name.LocalName == "NfseCancelamento");
 
                 // 2. Verifica o campo Status dentro do RPS

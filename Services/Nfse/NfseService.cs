@@ -115,8 +115,14 @@ public class NfseService : INfseService
 
                 if (notaDb == null)
                 {
+                    var notaObtida = new NotaFiscal
+                    {
+                        Id = rpsNumero,
+                        Valor = resposta.ValorRecuperado,
+                        Tomador = new Cliente { Cnpj = resposta.CnpjTomadorRecuperado ?? "00000000000000" } // Se não conseguir recuperar, coloca um CNPJ genérico
+                    };
                     // Se a nota não existia no banco, salva com o status que veio da prefeitura
-                    await SalvarNoBanco(new NotaFiscal { Id = rpsNumero }, resposta, resposta.StatusRecuperado);
+                    await SalvarNoBanco(notaObtida, resposta, resposta.StatusRecuperado);
                 }
                 else
                 {
@@ -214,33 +220,43 @@ public class NfseService : INfseService
 
     private async Task SalvarNoBanco(NotaFiscal nota, RespostaEmissao resposta, StatusNfse status = StatusNfse.Faturada)
     {
-        using var context = await _factory.CreateDbContextAsync();
-
-        var statusFinal = resposta.StatusRecuperado != StatusNfse.Pendente
-                      ? resposta.StatusRecuperado
-                      : status;
-
-        var linkPdef = GerarLinkConsultaPublica(resposta.NumeroNota!, resposta.CodigoVerificacao!);
-
-        var notaEmitida = new NotaFiscalEmitida
+        try
         {
-            RpsNumero = nota.Id, // Grava o número do RPS que acabamos de usar
-            VendaId = 100, // tanto faz a empresa que escolhe (logica para que ela seja inserida pelo usuario e volte pelo Response)
-            Valor = nota.Valor,
-            CnpjTomador = nota.Tomador.Cnpj,
-            DataEmissao = DateTime.UtcNow,
-            NumeroNota = resposta.NumeroNota,
-            CodigoVerificacao = resposta.CodigoVerificacao,
-            XmlRetorno = resposta.XmlRetorno,
-            //LinkPdf = linkPdef,  optei por não salvar o link pois se mudar a forma que ele é gerado pela prefeitura, só altero na função que o gera e sempre chamo a função, evitando confusões futuras
-            Status = statusFinal
-        };
+            // Simula um pequeno delay para garantir que a prefeitura processou a nota antes de tentar salvar no banco local
+            await Task.Delay(1000);
+            using var context = await _factory.CreateDbContextAsync();
 
-        context.NotasFiscaisEmitidas.Add(notaEmitida);
-        await context.SaveChangesAsync();
+            var statusFinal = resposta.StatusRecuperado != StatusNfse.Pendente
+                        ? resposta.StatusRecuperado
+                        : status;
 
-        resposta.IdInternoNoBanco = notaEmitida.Id;
-        Console.WriteLine($"Nota {resposta.NumeroNota} salva com sucesso!");
+            var linkPdef = GerarLinkConsultaPublica(resposta.NumeroNota!, resposta.CodigoVerificacao!);
+
+            var notaEmitida = new NotaFiscalEmitida
+            {
+                RpsNumero = nota.Id, // Grava o número do RPS que acabamos de usar
+                VendaId = 100, // tanto faz a empresa que escolhe (logica para que ela seja inserida pelo usuario e volte pelo Response)
+                Valor = nota.Valor,
+                CnpjTomador = nota.Tomador.Cnpj,
+                DataEmissao = DateTime.UtcNow,
+                NumeroNota = resposta.NumeroNota,
+                CodigoVerificacao = resposta.CodigoVerificacao,
+                XmlRetorno = resposta.XmlRetorno,
+                //LinkPdf = linkPdef,  optei por não salvar o link pois se mudar a forma que ele é gerado pela prefeitura, só altero na função que o gera e sempre chamo a função, evitando confusões futuras
+                Status = statusFinal
+            };
+
+            context.NotasFiscaisEmitidas.Add(notaEmitida);
+            await context.SaveChangesAsync();
+
+            resposta.IdInternoNoBanco = notaEmitida.Id;
+            Console.WriteLine($"Nota {resposta.NumeroNota} salva com sucesso!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERRO BANCO] Falha ao salvar nota {resposta.NumeroNota}: {ex.Message}");
+            if (ex.InnerException != null) Console.WriteLine($"[DETALHE] {ex.InnerException.Message}");
+        }
     }
 
     public async Task<RespostaEmissao> CancelarNotaAsync(string numeroNota, string codigoMotivo = "1")

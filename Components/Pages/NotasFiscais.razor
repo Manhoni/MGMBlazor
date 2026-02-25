@@ -208,6 +208,16 @@
                   if (result.Sucesso)
                   {
                         await CarregarNotas(); // Recarrega o grid
+
+                        var authState = await AuthProvider.GetAuthenticationStateAsync();
+                        var usuario = authState.User.Identity?.Name ?? "Sistema";
+
+                        await AuditLog.RegistrarLogAsync(
+                              usuario, 
+                              "Cancelamento de NFSe", 
+                              $"Nota: {nota.NumeroNota} | RPS: {nota.RpsNumero} | Motivo: Erro na emissão", 
+                              "Notas Fiscais"
+                        );
                   }
                   else
                   {
