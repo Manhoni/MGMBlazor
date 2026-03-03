@@ -9,6 +9,7 @@
 @inject NavigationManager Nav
 @inject AuditLogService AuditLog
 @inject AuthenticationStateProvider AuthProvider
+@inject IClienteService ClienteService
 
 <div class="container-fluid mt-3">
       <div
@@ -29,6 +30,29 @@
                   <div class="col-md-2">
                         <label class="small fw-bold">FIM</label>
                         <input type="date" class="form-control form-control-sm" @bind="dataFim" />
+                  </div>
+                  <div class="col-md-4 position-relative">
+                        <label class="small fw-bold">CLIENTE</label>
+                        <div class="input-group input-group-sm">
+                              <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                              <input type="text" class="form-control shadow-sm" 
+                                     placeholder="Digite nome ou CNPJ..." 
+                                     @bind="filtroCliente" @oninput="OnInputBusca" />
+                        </div>
+
+                        @if (clientesSugestao.Any())
+                        {
+                              <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050; top: 100%;">
+                                    @foreach (var c in clientesSugestao)
+                                    {
+                                          <button class="list-group-item list-group-item-action py-1 small" 
+                                                  @onclick="() => SelecionarCliente(c)">
+                                                <strong>@MGMFormatador.FormatarCnpj(c.Cnpj)</strong><br/>
+                                                <span class="text-truncate d-block">@c.RazaoSocial</span>
+                                          </button>
+                                    }
+                              </ul>
+                        }
                   </div>
                   <div class="col-md-4">
                         <div class="d-flex align-items-end gap-2">
@@ -144,16 +168,68 @@
       private HashSet<int> notasSelecionadas = new();
       private DateTime dataInicio = DateTime.Today.AddDays(-30);
       private DateTime dataFim = DateTime.Today;
+      private string filtroCliente = "";
+      private string? cnpjSelecionado = null;
+      private List<Cliente> clientesSugestao = new();
+      private Timer? debounceTimer;
 
       protected override async Task OnInitializedAsync() => await CarregarNotas();
+
+      private void OnInputBusca(ChangeEventArgs e)
+      {
+            filtroCliente = e.Value?.ToString() ?? "";
+            
+            // Se o usuário apagar o texto, remove o filtro de CNPJ
+            if (string.IsNullOrWhiteSpace(filtroCliente)) cnpjSelecionado = null;
+
+            debounceTimer?.Stop();
+            debounceTimer?.Dispose();
+
+            if (filtroCliente.Length >= 3)
+            {
+                  debounceTimer = new Timer(350); // Espera 350ms
+                  debounceTimer.Elapsed += OnTimerElapsed;
+                  debounceTimer.AutoReset = false;
+                  debounceTimer.Start();
+            }
+            else
+            {
+                  clientesSugestao.Clear();
+            }
+      }
+
+      private async void OnTimerElapsed(object? sender, ElapsedEventArgs e)
+      {
+            // Busca no banco apenas os 10 clientes que batem com o termo
+            var resultados = await ClienteService.PesquisarClientesAsync(filtroCliente);
+            
+            await InvokeAsync(() =>
+            {
+                  clientesSugestao = resultados;
+                  StateHasChanged();
+            });
+      }
+
+      private void SelecionarCliente(Cliente c)
+      {
+            filtroCliente = c.RazaoSocial;
+            cnpjSelecionado = c.Cnpj;
+            clientesSugestao.Clear();
+      }
 
       private async Task CarregarNotas()
       {
             using var context = await DbFactory.CreateDbContextAsync();
-            notas = await context.NotasFiscaisEmitidas
-                .Where(n => n.DataEmissao >= dataInicio && n.DataEmissao <= dataFim.AddDays(1))
-                .OrderByDescending(n => n.Id)
-                .ToListAsync();
+            
+            var query = context.NotasFiscaisEmitidas
+                .Where(n => n.DataEmissao >= dataInicio && n.DataEmissao <= dataFim.AddDays(1));
+
+            if (!string.IsNullOrEmpty(cnpjSelecionado))
+            {
+                query = query.Where(n => n.CnpjTomador == cnpjSelecionado);
+            }
+
+            notas = await query.OrderByDescending(n => n.Id).ToListAsync();
       }
 
       private void ToggleNota(int id)

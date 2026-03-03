@@ -1,0 +1,44 @@
+<div class="changelog-container">
+    <div class="version-entry">
+        <h5 class="fw-bold text-dark">Versão 0.8.5 (Atual)</h5>
+        <ul>
+            <li>Implementada <strong>Busca Dinâmica com Debouncing</strong> (350ms) nas telas de Notas e Boletos.</li>
+            <li>Adicionado campo <strong>CNPJ Tomador</strong> na tabela de Cobranças para filtros ultra-rápidos.</li>
+            <li>Correção de bug: Resolvido problema de sincronismo de notas inexistentes no banco local.</li>
+        </ul>
+    </div>
+
+    <div class="version-entry">
+        <h6 class="fw-bold text-muted italic">Versão 0.8.4</h6>
+        <ul>
+            <li>Ativação da <strong>Trilha de Auditoria</strong> (Logs) em todo o sistema.</li>
+            <li>Implementada trava lógica contra cliques duplos em botões de emissão.</li>
+            <li>Rodapé fixo com design 3D e degradê metálico.</li>
+        </ul>
+    </div>
+
+    <div class="version-entry">
+        <h6 class="fw-bold text-muted">Versão 0.8.0</h6>
+        <ul>
+            <li>Primeira emissão de <strong>NFSe REAL</strong> em ambiente de produção.</li>
+            <li>Integração com <strong>Sicoob V3</strong> (Boletos Híbridos com Pix).</li>
+            <li>Migração para Google Cloud Platform (GCP).</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .changelog-container {
+        color: #666; /* Cinza conforme solicitado */
+        font-family: sans-serif;
+        line-height: 1.6;
+    }
+    .version-entry {
+        margin-bottom: 25px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #ddd;
+    }
+    .version-entry:last-child { border-bottom: none; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 5px; }
+</style>

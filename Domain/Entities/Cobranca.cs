@@ -9,6 +9,9 @@ public class Cobranca
     [Key]
     public int Id { get; set; }
 
+    [Required]
+    public string CnpjTomador { get; set; } = string.Empty;
+
     // Relacionamento com a Nota Fiscal
     public int? NotaFiscalEmitidaId { get; set; }
 

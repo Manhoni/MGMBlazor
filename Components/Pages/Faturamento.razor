@@ -279,6 +279,8 @@
 
       private async Task GerarFaturamento()
       {
+            if (processando) return;
+            
             var authState = await AuthProvider.GetAuthenticationStateAsync();
             var nomeUsuario = authState.User.Identity?.Name ?? "Sistema";
 
@@ -388,6 +390,8 @@
 
       private async Task GerarBoletoAgora()
       {
+            if (processando) return;
+
             if (string.IsNullOrEmpty(enderecoBoleto) || string.IsNullOrEmpty(cepBoleto))
             {
                   statusTeste = "❌ Preencha o endereço e CEP para o boleto.";

@@ -7,6 +7,7 @@
 @inject IJSRuntime JS
 @inject AuditLogService AuditLog
 @inject AuthenticationStateProvider AuthProvider
+@inject IClienteService ClienteService
 
 <div class="container-fluid mt-3">
       <!-- CABEÇALHO -->
@@ -28,6 +29,29 @@
                   <div class="col-md-2">
                         <label class="small fw-bold">DATA FINAL</label>
                         <input type="date" class="form-control form-control-sm" @bind="dataFim" />
+                  </div>
+                  <div class="col-md-4 position-relative">
+                        <label class="small fw-bold">CLIENTE</label>
+                        <div class="input-group input-group-sm">
+                              <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                              <input type="text" class="form-control" 
+                                    placeholder="Pesquisar cliente..." 
+                                    @bind="filtroCliente" @oninput="OnInputBusca" />
+                        </div>
+
+                        @if (clientesSugestao.Any())
+                        {
+                        <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050; top: 100%;">
+                              @foreach (var c in clientesSugestao)
+                              {
+                                    <button class="list-group-item list-group-item-action py-1 small" 
+                                          @onclick="() => SelecionarCliente(c)">
+                                    @c.RazaoSocial <br/>
+                                    <span class="text-muted" style="font-size: 0.7rem;">@MGMFormatador.FormatarCnpj(c.Cnpj)</span>
+                                    </button>
+                              }
+                        </ul>
+                        }
                   </div>
                   <div class="col-md-2">
                         <button class="btn btn-sm btn-dark w-100" @onclick="CarregarBoletos">
@@ -145,17 +169,67 @@
       private List<Cobranca> cobrancas = new();
       private DateTime dataInicio = DateTime.Today.AddDays(-30);
       private DateTime dataFim = DateTime.Today;
+      private string filtroCliente = "";
+      private string? cnpjSelecionado = null;
+      private List<Cliente> clientesSugestao = new();
+      private Timer? debounceTimer;
 
       protected override async Task OnInitializedAsync() => await CarregarBoletos();
+
+      private void OnInputBusca(ChangeEventArgs e)
+      {
+            filtroCliente = e.Value?.ToString() ?? "";
+            
+            // Se o usuário apagar o texto, remove o filtro de CNPJ
+            if (string.IsNullOrWhiteSpace(filtroCliente)) cnpjSelecionado = null;
+
+            debounceTimer?.Stop();
+            debounceTimer?.Dispose();
+
+            if (filtroCliente.Length >= 3)
+            {
+                  debounceTimer = new Timer(350); // Espera 350ms
+                  debounceTimer.Elapsed += OnTimerElapsed;
+                  debounceTimer.AutoReset = false;
+                  debounceTimer.Start();
+            }
+            else
+            {
+                  clientesSugestao.Clear();
+            }
+      }
+
+      private async void OnTimerElapsed(object? sender, ElapsedEventArgs e)
+      {
+            // Busca no banco apenas os 10 clientes que batem com o termo
+            var resultados = await ClienteService.PesquisarClientesAsync(filtroCliente);
+            
+            await InvokeAsync(() =>
+            {
+                  clientesSugestao = resultados;
+                  StateHasChanged();
+            });
+      }
+
+      private void SelecionarCliente(Cliente c)
+      {
+            filtroCliente = c.RazaoSocial;
+            cnpjSelecionado = c.Cnpj;
+            clientesSugestao.Clear();
+      }
 
       private async Task CarregarBoletos()
       {
             using var context = await DbFactory.CreateDbContextAsync();
-            cobrancas = await context.Cobrancas
-                .Include(c => c.NotaFiscalEmitida)
-                .Where(c => c.DataCadastro >= dataInicio && c.DataCadastro <= dataFim.AddDays(1))
-                .OrderByDescending(c => c.Id)
-                .ToListAsync();
+            var query = context.Cobrancas
+                .Where(n => n.DataCadastro >= dataInicio && n.DataCadastro <= dataFim.AddDays(1));
+
+            if (!string.IsNullOrEmpty(cnpjSelecionado))
+            {
+                query = query.Where(n => n.CnpjTomador == cnpjSelecionado);
+            }
+
+            cobrancas = await query.OrderByDescending(n => n.Id).ToListAsync();
       }
 
       private async Task SincronizarBoleto(Cobranca cob)

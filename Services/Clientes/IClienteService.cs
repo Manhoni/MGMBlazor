@@ -7,4 +7,5 @@ public interface IClienteService
       Task<Cliente?> BuscarPorCnpjAsync(string cnpj);
       Task SalvarAsync(Cliente cliente);
       Task AtualizarAsync(Cliente cliente);
+      Task<List<Cliente>> PesquisarClientesAsync(string termo);
 }

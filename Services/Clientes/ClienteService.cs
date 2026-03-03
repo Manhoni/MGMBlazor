@@ -29,4 +29,14 @@ public class ClienteService : IClienteService
             context.Clientes.Update(cliente);
             await context.SaveChangesAsync();
       }
+
+      public async Task<List<Cliente>> PesquisarClientesAsync(string termo)
+      {
+            using var context = await _factory.CreateDbContextAsync();
+            return await context.Clientes
+                .Where(c => EF.Functions.ILike(c.RazaoSocial, $"%{termo}%") || c.Cnpj.Contains(termo))
+                  .OrderBy(c => c.RazaoSocial)
+                .Take(10) // Traz apenas os 10 melhores resultados
+                .ToListAsync();
+      }
 }

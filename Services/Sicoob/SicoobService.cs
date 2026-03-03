@@ -247,6 +247,7 @@ public class SicoobService : ISicoobService
             var novaCobranca = new Cobranca
             {
                 NotaFiscalEmitidaId = notaFiscalEmitidaDbId,
+                CnpjTomador = request.Pagador.NumeroCpfCnpj,
                 NossoNumero = boletoGerado.Resultado.NossoNumero,
                 LinhaDigitavel = boletoGerado.Resultado.LinhaDigitavel ?? "",
                 CodigoBarras = boletoGerado.Resultado.CodigoBarras,

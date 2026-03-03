@@ -266,6 +266,8 @@
 
     private async Task EmitirNota()
     {
+        if (processando) return;
+        
         if (servicoSelecionadoId == 0 || nota.Valor <= 0)
         {
             await JS.InvokeVoidAsync("alert", "Selecione o Serviço e/ou informe um Valor maior que zero.");

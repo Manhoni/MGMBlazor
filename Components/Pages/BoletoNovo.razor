@@ -204,6 +204,8 @@
 
     private async Task GerarBoleto()
     {
+        if (processando) return;
+        
         if (valorBoleto <= 0) { statusMsg = "Erro: Valor deve ser maior que zero."; return; }
 
         long? nossoNumeroLog = null;
