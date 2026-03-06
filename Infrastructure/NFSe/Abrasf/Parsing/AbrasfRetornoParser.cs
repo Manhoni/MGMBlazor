@@ -129,6 +129,43 @@ public class AbrasfRetornoParser : INfseRetornoParser
             resposta.Erros.Add($"Erro crítico no Parser: {ex.Message}");
         }
     }
+
+    public Cliente ExtrairTomadorDoXml(string xmlRetorno)
+    {
+        var cliente = new Cliente();
+        if (string.IsNullOrEmpty(xmlRetorno)) return cliente;
+
+        try
+        {
+            var doc = XDocument.Parse(xmlRetorno.Trim());
+
+            var infNfse = doc.Descendants().FirstOrDefault(x => x.Name.LocalName == "infNfse");
+
+
+
+            var tomadorNode = doc.Descendants().FirstOrDefault(x => x.Name.LocalName == "Tomador");
+
+            if (tomadorNode != null)
+            {
+                cliente.RazaoSocial = tomadorNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "RazaoSocial")?.Value ?? "";
+                cliente.Cnpj = tomadorNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Cnpj")?.Value ?? "";
+                cliente.Email = tomadorNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Email")?.Value ?? "";
+                var endNode = tomadorNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Endereco");
+                if (endNode != null)
+                {
+                    cliente.Endereco = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Endereco")?.Value ?? "";
+                    cliente.Numero = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Numero")?.Value ?? "";
+                    cliente.Bairro = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Bairro")?.Value ?? "";
+                    cliente.Cidade = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Cidade")?.Value ?? "";
+                    cliente.Uf = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Uf")?.Value ?? "";
+                    cliente.Cep = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "Cep")?.Value ?? "";
+                    cliente.MunicipioCodigoIbge = endNode.Descendants().FirstOrDefault(x => x.Name.LocalName == "CodigoMunicipio")?.Value ?? "";
+                }
+            }
+        }
+        catch (Exception ex) { Console.WriteLine("Erro ao extrair dados do XML: " + ex.Message); }
+        return cliente;
+    }
 }
 // public void Processar(string xmlSoap, RespostaEmissao resposta)
 // {

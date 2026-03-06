@@ -119,7 +119,7 @@ public class AbrasfXmlBuilder
                             new XElement(Ns + "Numero", numeroNota),
                             new XElement(Ns + "CpfCnpj", new XElement(Ns + "Cnpj", _options.Prestador.Cnpj)),
                             new XElement(Ns + "InscricaoMunicipal", _options.Prestador.InscricaoMunicipal),
-                            new XElement(Ns + "CodigoMunicipio", "4115200") // Maringá
+                            new XElement(Ns + "CodigoMunicipio", _options.Prestador.CodigoMunicipio)
                         ),
                         new XElement(Ns + "CodigoCancelamento", codigoCancelamento)
                     )
@@ -139,7 +139,7 @@ public class AbrasfXmlBuilder
                                 new XElement(Ns + "Numero", numeroNotaSubstituir),
                                 new XElement(Ns + "CpfCnpj", new XElement(Ns + "Cnpj", _options.Prestador.Cnpj)),
                                 new XElement(Ns + "InscricaoMunicipal", _options.Prestador.InscricaoMunicipal),
-                                new XElement(Ns + "CodigoMunicipio", "4115200")
+                                new XElement(Ns + "CodigoMunicipio", _options.Prestador.CodigoMunicipio)
                             ),
                             new XElement(Ns + "CodigoCancelamento", codigoCancelamento)
                         )

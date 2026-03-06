@@ -317,7 +317,7 @@ public class NfseService : INfseService
 
             if (resposta.Sucesso)
             {
-                // 1. "MATA" A NOTA ANTIGA NO SEU BANCO
+                // 1. "MATA" A NOTA ANTIGA NO BANCO
                 var notaAntigaDb = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroAntiga);
                 if (notaAntigaDb != null)
                 {
@@ -327,7 +327,7 @@ public class NfseService : INfseService
                     await context.SaveChangesAsync();
                 }
 
-                // 2. "NASCE" A NOTA NOVA (A 1921 que o parser agora vai pegar certo)
+                // 2. "NASCE" A NOTA NOVA
                 await SalvarNoBanco(novaNota, resposta);
             }
         }

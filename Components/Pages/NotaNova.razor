@@ -14,6 +14,7 @@
 @inject IJSRuntime JS
 @inject AuditLogService AuditLog
 @inject AuthenticationStateProvider AuthProvider
+@inject INfseRetornoParser _retornoParser
 
 <PageTitle>Nova Nota Fiscal Avulsa</PageTitle>
 
@@ -40,45 +41,84 @@
         </div>
     }
 
-    <!-- 1. BUSCA DE CLIENTE -->
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-header bg-dark text-white py-2">
-            <h6 class="mb-0 small fw-bold text-uppercase">1. Identificação do Tomador (Cliente)</h6>
-        </div>
-        <div class="card-body bg-light position-relative"> @* position-relative para a lista de sugestões *@
-            <div class="row g-3 align-items-end">
-                <div class="col-md-5">
-                    <label class="form-label small fw-bold">DIGITE O CNPJ OU NOME</label>
-                    <input type="text" class="form-control" 
-                           placeholder="Busca rápida..."
-                           @bind="filtroBusca" @oninput="OnInputBusca" />
-                    
-                    @if (clientesSugestao.Any())
-                    {
-                        <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050; max-height: 200px; overflow-y: auto;">
-                            @foreach (var c in clientesSugestao)
-                            {
-                                <button class="list-group-item list-group-item-action small py-2" @onclick="() => SelecionarCliente(c)">
-                                    <strong>@MGMFormatador.FormatarCnpj(c.Cnpj)</strong> - @c.RazaoSocial
-                                </button>
-                            }
-                        </ul>
-                    }
-                </div>
-                <div class="col-md-auto">
-                    <button class="btn btn-dark" @onclick="BuscarManual"><i class="bi bi-search"></i> Buscar</button>
-                </div>
-                @if (clienteNaoEncontrado)
-                {
-                    <div class="col-md-auto">
-                        <span class="badge bg-warning text-dark p-2">
-                            <i class="bi bi-exclamation-triangle"></i> Não cadastrado. Preencha manualmente.
-                        </span>
-                    </div>
-                }
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-body p-2 d-flex justify-content-center bg-light rounded">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="modo" id="m1" checked="@(!isSubstituicao)" @onclick="() => isSubstituicao = false" />
+                <label class="form-check-label fw-bold" for="m1">Emissão Normal</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="modo" id="m2" checked="@isSubstituicao" @onclick="() => isSubstituicao = true" />
+                <label class="form-check-label fw-bold" for="m2">Substituição</label>
             </div>
         </div>
     </div>
+
+    @if (isSubstituicao)
+    {
+        @* 2. CAMPO DE BUSCA DA NOTA ANTIGA (Só aparece se modo substituição) *@
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-dark text-white py-2">
+                <h6 class="mb-0 small fw-bold text-uppercase">1. Identificação da Nota a Substituir</h6>
+            </div>
+            <div class="card-body bg-light">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold">Nº DA NOTA A SUBSTITUIR</label>
+                        <input type="text" class="form-control shadow-sm" @bind="numeroNotaAntiga" placeholder="Ex: 1956" />
+                    </div>
+                    <div class="col-md-auto">
+                        @* Botão padrão MGM (Preto com faixa verde se estiver no seu app.css) *@
+                        <button class="btn btn-primary px-4" @onclick="CarregarNotaParaSubstituir" disabled="@processando">
+                            <i class="bi bi-search"></i> Carregar Dados
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- 1. BUSCA DE CLIENTE -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-header bg-dark text-white py-2">
+                <h6 class="mb-0 small fw-bold text-uppercase">1. Identificação do Tomador (Cliente)</h6>
+            </div>
+            <div class="card-body bg-light position-relative"> @* position-relative para a lista de sugestões *@
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold">DIGITE O CNPJ OU NOME</label>
+                        <input type="text" class="form-control shadow-sm" 
+                            placeholder="Busca rápida..."
+                            @bind="filtroBusca" @oninput="OnInputBusca" />
+                        
+                        @if (clientesSugestao.Any())
+                        {
+                            <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050; max-height: 200px; overflow-y: auto;">
+                                @foreach (var c in clientesSugestao)
+                                {
+                                    <button class="list-group-item list-group-item-action small py-2" @onclick="() => SelecionarCliente(c)">
+                                        <strong>@MGMFormatador.FormatarCnpj(c.Cnpj)</strong> - @c.RazaoSocial
+                                    </button>
+                                }
+                            </ul>
+                        }
+                    </div>
+                    <div class="col-md-auto">
+                        <button class="btn btn-primary" @onclick="BuscarManual"><i class="bi bi-search"></i> Buscar</button>
+                    </div>
+                    @if (clienteNaoEncontrado)
+                    {
+                        <div class="col-md-auto">
+                            <span class="badge bg-warning text-dark p-2">
+                                <i class="bi bi-exclamation-triangle"></i> Não cadastrado. Preencha manualmente.
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- 2. DADOS DA NOTA E ENDEREÇO -->
     @if (mostrarFormulario)
@@ -123,8 +163,8 @@
                     <hr class="my-3 text-muted" />
                     
                     <div class="col-md-3 mb-3">
-                        <label class="form-label small fw-bold text-primary">CEP *</label>
-                        <input type="text" class="form-control border-primary" 
+                        <label class="form-label small fw-bold text-success">CEP *</label>
+                        <input type="text" class="form-control border-success" 
                                value="@MGMFormatador.FormatarCep(nota.Tomador.Cep)" 
                                @oninput="OnCepChange" maxlength="9" />
                     </div>
@@ -166,7 +206,7 @@
                     }
                     else
                     {
-                        <i class="bi bi-cloud-arrow-up-fill"></i> <span>Emitir Nota Fiscal Avulsa</span>
+                        <span>@(isSubstituicao ? "Confirmar Substituição de Nota" : "Emitir Nota Fiscal Avulsa")</span>
                     }
                 </button>
             </div>
@@ -193,6 +233,7 @@
 </style>
 
 @code {
+    private string statusTeste = "";
     private string cnpjBusca = "";
     private bool mostrarFormulario = false;
     private bool clienteNaoEncontrado = false;
@@ -204,9 +245,11 @@
     private int servicoSelecionadoId;
     private NotaFiscal nota = new() { Tomador = new Cliente(), Servico = new Servico() };
     private RespostaEmissao? respostaNfse;
- private string filtroBusca = "";
+    private string filtroBusca = "";
     private List<Cliente> todosClientes = new();
     private List<Cliente> clientesSugestao = new();
+    private bool isSubstituicao = false;
+    private string numeroNotaAntiga = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -262,6 +305,44 @@
                 StateHasChanged();
             }
         }
+    }
+
+    private async Task CarregarNotaParaSubstituir()
+    {
+        if (string.IsNullOrEmpty(numeroNotaAntiga)) return;
+        processando = true;
+
+        using var context = await DbFactory.CreateDbContextAsync();
+        
+        // 1. TENTA BUSCAR NO BANCO LOCAL
+        var notaDb = await context.NotasFiscaisEmitidas.FirstOrDefaultAsync(n => n.NumeroNota == numeroNotaAntiga);
+
+        // 2. SE NÃO ACHOU NO BANCO, TENTA BUSCAR NA PREFEITURA (Sincronismo que já criamos)
+        if (notaDb == null)
+        {
+            statusTeste = "🔎 Nota não encontrada localmente. Buscando na prefeitura...";
+            // Precisamos do RPS dessa nota. Se o usuário não souber, ele digita. 
+            // Mas vamos assumir que ele está buscando pelo número da nota.
+            // O ideal aqui seria ter um método no Service que busca por Número de Nota.
+            // Por enquanto, vamos focar no que já temos:
+        }
+
+        if (notaDb != null)
+        {
+            // 3. EXTRAI OS DADOS E PREENCHE O FORMULÁRIO
+            nota.Tomador = _retornoParser.ExtrairTomadorDoXml(notaDb.XmlRetorno);
+            nota.Valor = notaDb.Valor;
+            
+            mostrarFormulario = true;
+            cepEncontrado = true; // Abre os campos de endereço
+            clienteJaExistia = true; 
+            statusTeste = $"✅ Dados da Nota {numeroNotaAntiga} carregados.";
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Nota não encontrada no banco de dados.");
+        }
+        processando = false;
     }
 
     private async Task EmitirNota()
