@@ -5,5 +5,10 @@ namespace MGMBlazor.Infrastructure.NFSe.Abrasf.Parsing;
 public interface INfseRetornoParser
 {
     void Processar(string xmlRetorno, RespostaEmissao resposta);
-    Cliente ExtrairTomadorDoXml(string xmlSalvoNoBanco);
+    public class DadosSubstituicaoDTO
+    {
+        public Cliente Tomador { get; set; } = new();
+        public string ItemListaServico { get; set; } = string.Empty;
+    }
+    DadosSubstituicaoDTO ExtrairTomadorDoXml(string xmlSalvoNoBanco);
 }

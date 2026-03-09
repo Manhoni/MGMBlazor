@@ -44,11 +44,11 @@
     <div class="card mb-3 border-0 shadow-sm">
         <div class="card-body p-2 d-flex justify-content-center bg-light rounded">
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="modo" id="m1" checked="@(!isSubstituicao)" @onclick="() => isSubstituicao = false" />
+                <input class="form-check-input" type="radio" name="modo" id="m1" checked="@(!isSubstituicao)" @onclick="() => MudarModo(false)"/>
                 <label class="form-check-label fw-bold" for="m1">Emissão Normal</label>
             </div>
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="modo" id="m2" checked="@isSubstituicao" @onclick="() => isSubstituicao = true" />
+                <input class="form-check-input" type="radio" name="modo" id="m2" checked="@isSubstituicao" @onclick="() => MudarModo(true)" />
                 <label class="form-check-label fw-bold" for="m2">Substituição</label>
             </div>
         </div>
@@ -64,7 +64,7 @@
             <div class="card-body bg-light">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-2">
-                        <label class="form-label small fw-bold">Nº DA NOTA A SUBSTITUIR</label>
+                        <label class="form-label small fw-bold">Nº DA NOTA</label>
                         <input type="text" class="form-control shadow-sm" @bind="numeroNotaAntiga" placeholder="Ex: 1956" />
                     </div>
                     <div class="col-md-auto">
@@ -130,9 +130,54 @@
             <div class="card-body bg-light">
                 <div class="row">
                     <!-- Dados do Cliente -->
-                    <div class="col-md-8 mb-3">
-                        <label class="form-label small fw-bold">RAZÃO SOCIAL *</label>
-                        <input type="text" class="form-control" @bind="nota.Tomador.RazaoSocial" />
+                    <div class="col-md-8 mb-3 position-relative">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label small fw-bold">RAZÃO SOCIAL *</label>
+                            
+                            @if (isSubstituicao)
+                            {
+                                <button type="button" class="btn btn-link btn-sm p-0 text-success fw-bold" @onclick="IniciarTrocaCliente">
+                                    <i class="bi bi-person-gear"></i> Trocar Cliente
+                                </button>
+                            }
+                        </div>
+
+                        @if (trocandoCliente)
+                        {
+                            @* CAMPO DE BUSCA QUE APARECE SOMENTE SE CLICAR EM TROCAR *@
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control border-success shadow-sm" 
+                                    placeholder="Busque o cliente correto por Nome ou CNPJ..." 
+                                    @bind="filtroTrocaCliente" @oninput="OnInputTrocaCliente" />
+                            </div>
+
+                            @if (clientesSugestao.Any())
+                            {
+                                <ul class="list-group position-absolute w-100 shadow-lg" style="z-index: 1060; top: 100%;">
+                                    @foreach (var c in clientesSugestao)
+                                    {
+                                        <button class="list-group-item list-group-item-action py-2" 
+                                                @onclick="() => SelecionarNovoClienteParaSubstituicao(c)">
+                                            <strong>@MGMFormatador.FormatarCnpj(c.Cnpj)</strong> - @c.RazaoSocial
+                                        </button>
+                                    }
+                                </ul>
+                            }
+                        }
+                        else
+                        {
+                            @* CAMPO NORMAL (LOCKED SE FOR SUBSTITUIÇÃO E NÃO ESTIVER TROCANDO) *@
+                            <input type="text" class="form-control @(isSubstituicao ? "bg-light" : "")" 
+                                @bind="nota.Tomador.RazaoSocial" readonly="@isSubstituicao" />
+                        }
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label small fw-bold">CNPJ DO TOMADOR</label>
+                        @* O CNPJ sempre fica travado. Ele muda apenas se o usuário trocar o cliente no campo acima *@
+                        <input type="text" class="form-control bg-light" 
+                            value="@MGMFormatador.FormatarCnpj(nota.Tomador.Cnpj)" readonly />
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label small fw-bold">E-MAIL PARA ENVIO *</label>
@@ -183,9 +228,14 @@
                             <label class="form-label small fw-bold">BAIRRO</label>
                             <input type="text" class="form-control" @bind="nota.Tomador.Bairro" />
                         </div>
-                        <div class="col-md-4 mb-3 animate__animated animate__fadeIn">
-                            <label class="form-label small fw-bold text-muted">CIDADE</label>
-                            <input type="text" class="form-control bg-white" @bind="nota.Tomador.Cidade" readonly />
+                        <div class="col-md-4 mb-3">
+                            @if (isSubstituicao) {
+                                <label class="form-label small fw-bold text-muted">CÓD. MUNICÍPIO (IBGE)</label>
+                                <input type="text" class="form-control bg-white shadow-none" value="@nota.Tomador.MunicipioCodigoIbge" readonly style="background-color: #e9ecef !important;" />
+                            } else {
+                                <label class="form-label small fw-bold">CIDADE</label>
+                                <input type="text" class="form-control bg-white" @bind="nota.Tomador.Cidade" readonly />
+                            }
                         </div>
                         <div class="col-md-2 mb-3 animate__animated animate__fadeIn">
                             <label class="form-label small fw-bold text-muted">UF</label>
@@ -250,12 +300,61 @@
     private List<Cliente> clientesSugestao = new();
     private bool isSubstituicao = false;
     private string numeroNotaAntiga = "";
+    private bool trocandoCliente = false;
+    private string filtroTrocaCliente = "";
 
     protected override async Task OnInitializedAsync()
     {
         using var context = await DbFactory.CreateDbContextAsync();
         servicos = await context.Servicos.ToListAsync();
         todosClientes = await context.Clientes.ToListAsync();
+    }
+
+    private void MudarModo(bool substituicao)
+    {
+        isSubstituicao = substituicao;
+        LimparTela(); 
+    }
+
+    private void IniciarTrocaCliente()
+    {
+        trocandoCliente = true;
+        filtroTrocaCliente = "";
+        clientesSugestao.Clear();
+    }
+
+    private void SelecionarNovoClienteParaSubstituicao(Cliente novo)
+    {
+        nota.Tomador = novo; // Troca o tomador da nota pelo novo selecionado
+        trocandoCliente = false; // Fecha a busca
+        StateHasChanged();
+    }
+
+    private void OnInputTrocaCliente(ChangeEventArgs e)
+    {
+        filtroTrocaCliente = e.Value?.ToString() ?? "";
+        if (filtroTrocaCliente.Length >= 2)
+        {
+            clientesSugestao = todosClientes
+                .Where(c => c.RazaoSocial.Contains(filtroTrocaCliente, StringComparison.OrdinalIgnoreCase) || 
+                            c.Cnpj.Contains(filtroTrocaCliente))
+                .Take(5).ToList();
+        }
+        else { clientesSugestao.Clear(); }
+    }
+
+    private void LimparTela()
+    {
+        nota = new NotaFiscal { Tomador = new Cliente(), Servico = new Servico() };
+        filtroBusca = "";
+        cnpjBusca = "";
+        numeroNotaAntiga = "";
+        mostrarFormulario = false;
+        cepEncontrado = false;
+        clienteJaExistia = false;
+        servicoSelecionadoId = 0;
+        respostaNfse = null;
+        statusTeste = "";
     }
 
     private void OnCnpjInput(ChangeEventArgs e) => cnpjBusca = e.Value?.ToString() ?? "";
@@ -329,9 +428,17 @@
 
         if (notaDb != null)
         {
+            var dados = _retornoParser.ExtrairTomadorDoXml(notaDb.XmlRetorno);
             // 3. EXTRAI OS DADOS E PREENCHE O FORMULÁRIO
-            nota.Tomador = _retornoParser.ExtrairTomadorDoXml(notaDb.XmlRetorno);
+            nota.Tomador = dados.Tomador;
             nota.Valor = notaDb.Valor;
+
+            if (!string.IsNullOrEmpty(dados.ItemListaServico))
+            {
+                Console.WriteLine($"Código do Serviço extraído do XML: {dados.ItemListaServico}");
+                var srv = servicos.FirstOrDefault(s => s.CodigoMunicipal.Replace(".", "") == dados.ItemListaServico.Replace(".", ""));
+                if (srv != null) servicoSelecionadoId = srv.Id;
+            }
             
             mostrarFormulario = true;
             cepEncontrado = true; // Abre os campos de endereço
@@ -368,16 +475,17 @@
             nota.Servico = servicos.First(s => s.Id == servicoSelecionadoId);
 
             // 3. Envia
-            respostaNfse = await NfseService.EmitirNotaAsync(nota);
+            if (isSubstituicao)
+                respostaNfse = await NfseService.SubstituirNotaAsync(numeroNotaAntiga, nota);
+            else
+                respostaNfse = await NfseService.EmitirNotaAsync(nota);
             
             if (respostaNfse.Sucesso) {
                 // Sincroniza campos se necessário
                 var authState = await AuthProvider.GetAuthenticationStateAsync();
-                var usuario = authState.User.Identity?.Name ?? "Sistema";
-
-                string detalhes = $"NF: {respostaNfse.NumeroNota} | Cliente: {nota.Tomador.RazaoSocial} | Valor: {nota.Valor:C2}";
-                
-                await AuditLog.RegistrarLogAsync(usuario, "Emissão de Nota Avulsa", detalhes, "Nota Avulsa");
+                await AuditLog.RegistrarLogAsync(authState.User.Identity?.Name ?? "Sistema", 
+                    isSubstituicao ? "Substituição" : "Emissão Avulsa", 
+                    $"NF: {respostaNfse.NumeroNota}", "Nota Avulsa");
             }
         }
         catch (Exception ex)
