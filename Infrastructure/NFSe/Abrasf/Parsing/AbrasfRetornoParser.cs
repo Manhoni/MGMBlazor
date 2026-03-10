@@ -22,7 +22,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
         {
             var soapDoc = XDocument.Parse(xmlSoap);
 
-            //Console.WriteLine("\n[DEBUG-XML-SOAP no Parser] " + xmlSoap);
+            Console.WriteLine("\n[DEBUG-XML-SOAP no Parser] " + xmlSoap);
 
             // Busca o conteúdo de QUALQUER tag que termine em "Result" ou seja "return"
             var resultadoRaw = soapDoc.Descendants().FirstOrDefault(x =>
@@ -109,7 +109,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
                 // 2. Verifica o campo Status dentro do RPS
                 //var statusPrefeitura = infNfse.Descendants().FirstOrDefault(x => x.Name.LocalName == "Status")?.Value;
 
-                if (temCancelamento /*|| statusPrefeitura == "2"*/)
+                if (temCancelamento && nfseSubstituidora == null /*|| statusPrefeitura == "2"*/)
                 {
                     Console.WriteLine("Esta nota consta como CANCELADA na prefeitura.");
                     resposta.StatusRecuperado = StatusNfse.Cancelada;
