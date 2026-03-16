@@ -1,0 +1,60 @@
+/* Cores customizadas */
+.text-receber {
+      color: #0056b3 !important;
+}
+
+/* Azul escuro corporativo */
+.border-left-receber {
+      border-left: 6px solid #0056b3 !important;
+}
+
+.border-left-danger {
+      border-left: 6px solid #dc3545 !important;
+}
+
+.bg-mgm-verde {
+      background: linear-gradient(135deg, #76b82a 0%, #4e7a1c 100%) !important;
+}
+
+/* Ajuste para o gráfico não vazar */
+.chart-container {
+      width: 100%;
+      overflow: hidden;
+      padding: 10px;
+}
+
+.text-mgm {
+      color: #5a8d20;
+}
+
+.border-left-mgm {
+      border-left: 6px solid #76b82a;
+}
+
+.border-left-warning {
+      border-left: 6px solid #ffc107;
+}
+
+/* Correção para o gráfico não transbordar */
+.overflow-hidden {
+      overflow: hidden !important;
+}
+
+/* Centralização absoluta dos ícones de performance */
+.icon-circle {
+      width: 60px;
+      height: 60px;
+      background: #f0fdf4;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      margin-bottom: 15px;
+}
+
+.chart-box {
+      padding-bottom: 20px;
+      min-height: 450px;
+}

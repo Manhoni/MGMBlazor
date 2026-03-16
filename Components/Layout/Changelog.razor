@@ -1,58 +1,80 @@
 <div class="changelog-container">
     <div class="version-entry">
-        <h5 class="fw-bold text-dark">Versão 0.8.7 (Atual)</h5>
+        <h5 class="fw-bold text-dark">Versão 0.9.5 (Atual)</h5>
         <ul>
-            <li>Implementada <strong>Troca de Cliente</strong> na parte de Substituição de Notas.</li>
-            <li>Obtenção do serviço prestado que consta na nota direto do Xml Retornado</li>
+            <li><strong>Dashboard de BI:</strong> Implementação de visão analítica com gráficos ApexCharts.</li>
+            <li><strong>Métricas de Performance:</strong> Cálculo automático de horas economizadas e índice de cancelamento.</li>
+            <li><strong>Gestão de Fluxo de Caixa:</strong> Separação entre Inadimplência Total e Provisão de Recebimento do mês.</li>
+            <li><strong>UI Refinada:</strong> Ajuste de contraste nos cards operacionais e ícones centralizados.</li>
         </ul>
     </div>
+
     <div class="version-entry">
-        <h5 class="fw-bold text-muted italic">Versão 0.8.6</h5>
+        <h6 class="fw-bold text-muted italic">Versão 0.9.0</h6>
         <ul>
-            <li>Implementada <strong>Substituição de Notas</strong> na tela de Nota Avulsa.</li>
-            <li>Correção de estilos: Cores de CEP ajustadas na Nota Avulsa</li>
+            <li><strong>Substituição de Notas:</strong> Fluxo completo para anular e reemitir notas com um clique.</li>
+            <li><strong>Troca de Tomador:</strong> Busca dinâmica para correção de CNPJ em notas substituídas.</li>
+            <li><strong>E-mail Oficial:</strong> Migração para o servidor SMTP da MGM com múltiplos anexos em PDF.</li>
         </ul>
     </div>
+
     <div class="version-entry">
         <h6 class="fw-bold text-muted italic">Versão 0.8.5</h6>
         <ul>
-            <li>Implementada <strong>Busca Dinâmica com Debouncing</strong> (350ms) nas telas de Notas e Boletos.</li>
-            <li>Adicionado campo <strong>CNPJ Tomador</strong> na tabela de Cobranças para filtros ultra-rápidos.</li>
-            <li>Correção de bug: Resolvido problema de sincronismo de notas inexistentes no banco local.</li>
+            <li><strong>Busca Dinâmica:</strong> Implementação de <em>Debouncing</em> para pesquisa de clientes sem sobrecarga no banco.</li>
+            <li><strong>Otimização de Banco:</strong> Desnormalização do CNPJ na tabela de cobranças para filtros ultra-rápidos.</li>
+            <li><strong>Data Recovery:</strong> Sincronismo inteligente para reconstruir banco local via XML da prefeitura.</li>
         </ul>
     </div>
 
     <div class="version-entry">
-        <h6 class="fw-bold text-muted italic">Versão 0.8.4</h6>
+        <h6 class="fw-bold text-muted italic">Versão 0.8.0</h6>
         <ul>
-            <li>Ativação da <strong>Trilha de Auditoria</strong> (Logs) em todo o sistema.</li>
-            <li>Implementada trava lógica contra cliques duplos em botões de emissão.</li>
-            <li>Rodapé fixo com design 3D e degradê metálico.</li>
+            <li><strong>Go-Live Produção:</strong> Primeiro deploy em ambiente real no Google Cloud Platform (GCP).</li>
+            <li><strong>Segurança:</strong> Implementação da trilha de auditoria (Audit Logs) e mTLS bancário.</li>
+            <li><strong>Infraestrutura:</strong> Configuração de Nginx como Proxy Reverso e isolamento de banco de dados.</li>
         </ul>
     </div>
 
     <div class="version-entry">
-        <h6 class="fw-bold text-muted">Versão 0.8.0</h6>
+        <h6 class="fw-bold text-muted italic">Versão 0.5.0</h6>
         <ul>
-            <li>Primeira emissão de <strong>NFSe REAL</strong> em ambiente de produção.</li>
-            <li>Integração com <strong>Sicoob V3</strong> (Boletos Híbridos com Pix).</li>
-            <li>Migração para Google Cloud Platform (GCP).</li>
+            <li><strong>Interface Blazor:</strong> Criação do Layout MGM com componentes interativos e responsivos.</li>
+            <li><strong>Gestão de Clientes:</strong> Cadastro unificado com integração automática à API ViaCEP.</li>
+            <li><strong>Importação CSV:</strong> Motor de leitura de faturas legadas para automação de lote.</li>
+        </ul>
+    </div>
+
+    <div class="version-entry">
+        <h6 class="fw-bold text-muted italic">Versão 0.3.0</h6>
+        <ul>
+            <li><strong>Persistência:</strong> Implementação do Entity Framework Core com PostgreSQL.</li>
+            <li><strong>Arquitetura:</strong> Migração para <em>DbContextFactory</em> para suporte a múltiplas threads.</li>
+        </ul>
+    </div>
+
+    <div class="version-entry">
+        <h6 class="fw-bold text-muted italic">Versão 0.2.0</h6>
+        <ul>
+            <li><strong>Engine Bancário:</strong> Integração completa com a API Sicoob V3 (REST).</li>
+            <li><strong>Lógica Financeira:</strong> Cálculo de parcelamento, juros diários (0,03%) e multas.</li>
+        </ul>
+    </div>
+
+    <div class="version-entry">
+        <h6 class="fw-bold text-muted italic">Versão 0.1.0</h6>
+        <ul>
+            <li><strong>Engine Fiscal:</strong> Motor de emissão NFSe padrão Abrasf 2.01 (Maringá/Fintel).</li>
+            <li><strong>Criptografia:</strong> Implementação de Assinatura Digital XML via Certificado A1.</li>
         </ul>
     </div>
 </div>
 
 <style>
-    .changelog-container {
-        color: #666; /* Cinza conforme solicitado */
-        font-family: sans-serif;
-        line-height: 1.6;
-    }
-    .version-entry {
-        margin-bottom: 25px;
-        padding-bottom: 10px;
-        border-bottom: 1px dashed #ddd;
-    }
+    .changelog-container { color: #666; font-family: sans-serif; line-height: 1.4; }
+    .version-entry { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px dashed #ddd; }
     .version-entry:last-child { border-bottom: none; }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 5px; }
+    ul { padding-left: 18px; margin-top: 5px; }
+    li { margin-bottom: 3px; font-size: 0.85rem; }
+    .italic { font-style: italic; }
 </style>

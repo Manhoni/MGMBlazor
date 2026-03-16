@@ -138,3 +138,40 @@ h1:focus {
     transform: translateY(2px);
     border-bottom-width: 1px !important;
 }
+
+/* Corrigindo o Card Verde com Degradê e texto Branco */
+.bg-faturamento-mgm {
+    background: linear-gradient(135deg, #76b82a 0%, #4e7a1c 100%) !important;
+    color: white !important;
+}
+
+/* Deixando os Logs bem pequenos e espremidos */
+.log-item {
+    padding: 0.4rem 0.7rem !important;
+    font-size: 0.8rem !important;
+    border-bottom: 1px solid #eee;
+}
+
+.log-operacao {
+    font-weight: bold;
+    color: #5a8d20;
+    font-size: 0.75rem;
+}
+
+.log-detalhe {
+    color: #333;
+    margin: 0;
+}
+
+/* Corrigindo os ícones da aba Performance */
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    background: #f0fdf4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto !important;
+    /* ISSO CENTRALIZA O CÍRCULO */
+}
