@@ -35,6 +35,7 @@ public class Cobranca
     public decimal Valor { get; set; }
 
     public DateTime DataVencimento { get; set; }
+    public DateTime? DataPagamento { get; set; }
 
     [Required]
     public string Status { get; set; } = "Pendente"; // Pendente, Pago, Baixado

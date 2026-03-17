@@ -35,6 +35,14 @@
       border-left: 6px solid #ffc107;
 }
 
+.border-top-mgm {
+      border-top: 5px solid #76b82a !important;
+}
+
+.border-top-danger {
+      border-top: 5px solid #dc3545 !important;
+}
+
 /* Correção para o gráfico não transbordar */
 .overflow-hidden {
       overflow: hidden !important;

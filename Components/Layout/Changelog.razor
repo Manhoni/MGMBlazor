@@ -1,6 +1,24 @@
 <div class="changelog-container">
     <div class="version-entry">
-        <h5 class="fw-bold text-dark">Versão 0.9.5 (Atual)</h5>
+        <h5 class="fw-bold text-dark">Versão 0.9.7 (Atual)</h5>
+        <ul>
+            <li><strong>Engine Bancário:</strong> Refatoração do <code>SicoobService</code> para retornar Tuplas, permitindo o processamento de JSON bruto e captura de metadados não mapeados.</li>
+            <li><strong>Automação de Pagamentos:</strong> Implementada extração dinâmica da data real de liquidação via <code>JsonDocument</code> no robô das 06h e no botão de sincronismo.</li>
+            <li><strong>Fidelidade Histórica:</strong> Correção na lógica de persistência que impedia o registro correto das datas de pagamento em boletos já liquidados.</li>
+            <li><strong>Estabilidade de Build:</strong> Limpeza de artefatos de compilação e padronização de interfaces assíncronas no Linux.</li>
+        </ul>
+    </div>
+    <div class="version-entry">
+        <h5 class="fw-bold text-muted italic">Versão 0.9.6</h5>
+        <ul>
+            <li><strong>Inteligência de Crédito:</strong> Implementação de rankings automáticos de "Bons Pagadores" (pontualidade) e "Maus Pagadores" (atrasos).</li>
+            <li><strong>Sincronização de Status:</strong> Ajuste na leitura de boletos "Pendentes" e "Em Aberto" para refletir a realidade da API do banco.</li>
+            <li><strong>Correção de Timezone:</strong> Logs de auditoria e datas de pagamento ajustados para o fuso horário de Brasília (UTC-3).</li>
+            <li><strong>Layout Dinâmico:</strong> Otimização da Row de indicadores usando sistema de colunas flexíveis (estilo WPF *).</li>
+        </ul>
+    </div>
+    <div class="version-entry">
+        <h5 class="fw-bold text-muted italic">Versão 0.9.5</h5>
         <ul>
             <li><strong>Dashboard de BI:</strong> Implementação de visão analítica com gráficos ApexCharts.</li>
             <li><strong>Métricas de Performance:</strong> Cálculo automático de horas economizadas e índice de cancelamento.</li>

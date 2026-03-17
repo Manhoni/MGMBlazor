@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @attribute [Authorize]
 @using MGMBlazor.Infrastructure.Helpers
+@using System.Text.Json
 @inject ISicoobService SicoobService
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject IJSRuntime JS
@@ -234,7 +235,8 @@
 
       private async Task SincronizarBoleto(Cobranca cob)
       {
-            var result = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
+            var (result, jsonBruto) = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
+
             if (result?.Resultado != null)
             {
                   string novoStatus = result.Resultado.SituacaoBoleto ?? "Em Aberto";
@@ -246,8 +248,46 @@
                         return; 
                   }
 
+                  string jsonParaParse = JsonSerializer.Serialize(result);
+                  // --- BUSCA DA DATA REAL NO JSON DINÂMICO ---
+                  if (novoStatus == "Liquidado")
+                  {
+                        try 
+                        {
+                              // USAMOS O JSON BRUTO QUE VEIO DIRETO DA API
+                              using JsonDocument doc = JsonDocument.Parse(jsonBruto);
+                              var root = doc.RootElement;
+
+                              if (root.TryGetProperty("resultado", out var resNode) && 
+                                    resNode.TryGetProperty("listaHistorico", out var histNode))
+                              {
+                                    foreach (var item in histNode.EnumerateArray())
+                                    {
+                                          if (item.TryGetProperty("descricaoHistorico", out var desc) && 
+                                          desc.GetString()?.Contains("LIQUIDAÇÃO") == true)
+                                          {
+                                                if (item.TryGetProperty("dataHistorico", out var data) && 
+                                                      DateTime.TryParse(data.GetString(), out var dataReal))
+                                                {
+                                                      cob.DataPagamento = DateTime.SpecifyKind(dataReal, DateTimeKind.Utc);
+                                                      Console.WriteLine($"[SUCESSO] Data real encontrada: {dataReal:dd/MM/yyyy}");
+                                                      break;
+                                                }
+                                          }
+                                    }
+                              }
+                        }
+                        catch (Exception ex) 
+                        { 
+                              Console.WriteLine("Erro ao extrair data do histórico: " + ex.Message);
+                              // Fallback: se falhar o parse do histórico, usamos o dia atual para não ficar nulo
+                              if (!cob.DataPagamento.HasValue) cob.DataPagamento = DateTime.UtcNow.AddHours(-3);
+                        }
+                  }
+
                   using var context = await DbFactory.CreateDbContextAsync();
-                  cob.Status = result.Resultado.SituacaoBoleto ?? cob.Status;
+                  cob.Status = novoStatus;
+                  //cob.JsonRetorno = jsonBruto;
                   context.Cobrancas.Update(cob);
                   await context.SaveChangesAsync();
                   await CarregarBoletos();
@@ -264,9 +304,13 @@
             else
             {
                   // Se não tem no banco, busca na API na hora
-                  var resp = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
-                  if (!string.IsNullOrEmpty(resp?.Resultado?.PdfBoleto))
-                        await JS.InvokeVoidAsync("window.abrirPdfNoNavegador", resp.Resultado.PdfBoleto);
+                  var (objeto, json) = await SicoobService.ConsultarBoletoAsync(cob.NossoNumero);
+
+                  // Agora verificamos o 'objeto' que saiu de dentro da tupla
+                  if (!string.IsNullOrEmpty(objeto?.Resultado?.PdfBoleto))
+                  {
+                        await JS.InvokeVoidAsync("window.abrirPdfNoNavegador", objeto.Resultado.PdfBoleto);
+                  }
             }
       }
 

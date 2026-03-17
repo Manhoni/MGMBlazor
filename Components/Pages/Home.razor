@@ -148,37 +148,78 @@
             </div>
         </div>
 
-        <!-- TERCEIRA LINHA: LOGS (Só Admin) -->
-        <div class="row justify-content-end">
-            <div class="col-md-4">
-                <AuthorizeView Roles="Admin">
-                    <div class="card border-0 shadow-sm rounded-4 bg-white overflow-hidden">
-                        <div class="card-header bg-white border-0 py-2">
-                            <h6 class="m-0 fw-bold text-muted small text-uppercase">Atividade Recente</h6>
-                        </div>
-                        <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
-                            <div class="list-group list-group-flush">
-                                @foreach (var log in ultimosLogs)
-                                {
-                                    <div class="list-group-item border-0 py-1 bg-transparent" style="font-size: 0.7rem;">
-                                        <div class="d-flex justify-content-between">
-                                            <span class="fw-bold text-mgm">@log.Operacao.ToUpper()</span>
-                                            <span class="text-muted" style="font-size: 0.6rem;">@MGMFormatador.ParaHoraLocal(log.DataHora)</span>
-                                        </div>
-                                        <div class="text-dark text-truncate" title="@log.Detalhes">
-                                            @log.Detalhes
-                                        </div>
-                                        <div class="text-muted italic mt-1" style="font-size: 0.65rem;">
-                                            <i class="bi bi-person-circle"></i> @(log.Usuario.Contains("@") ? log.Usuario.Split('@')[0] : log.Usuario)
-                                        </div>
-                                    </div>
-                                }
+       <!-- TERCEIRA LINHA: RANKINGS E LOGS (Só Admin) -->
+<AuthorizeView Roles="Admin">
+    <div class="row g-3">
+        @* QUADRO 1: BONS PAGADORES *@
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-top-mgm">
+                <div class="card-header bg-white border-0 py-2">
+                    <h6 class="m-0 fw-bold text-success small"><i class="bi bi-star-fill"></i> BONS PAGADORES</h6>
+                </div>
+                <div class="card-body p-2">
+                    <div class="list-group list-group-flush">
+                        @foreach (var item in bonsPagadores)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-1 border-bottom">
+                            <span class="small text-dark" style="line-height: 1.2;">@item.Nome</span>
+                            <span class="badge bg-success rounded-pill" style="font-size: 0.65rem;">@item.Qtd em dia</span>
                             </div>
-                        </div>
+                        }
+                        @if(!bonsPagadores.Any()) { <small class="text-muted p-2">Nenhum registro ainda.</small> }
                     </div>
-                </AuthorizeView>
+                </div>
             </div>
         </div>
+
+        @* QUADRO 2: MAUS PAGADORES *@
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white border-top-danger">
+                <div class="card-header bg-white border-0 py-2">
+                    <h6 class="m-0 fw-bold text-danger small"><i class="bi bi-exclamation-triangle-fill"></i> MAUS PAGADORES</h6>
+                </div>
+                <div class="card-body p-2">
+                    <div class="list-group list-group-flush">
+                        @foreach (var item in mausPagadores)
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-1 border-bottom">
+                                <span class="small text-dark" style="line-height: 1.2;">@item.Nome</span>
+                                <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">@item.Qtd atrasos</span>
+                            </div>
+                        }
+                        @if(!mausPagadores.Any()) { <small class="text-muted p-2">Nenhum registro ainda.</small> }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* QUADRO 3: ATIVIDADE RECENTE (LOGS) *@
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 overflow-hidden">
+                <div class="card-header bg-white border-0 py-2">
+                    <h6 class="m-0 fw-bold text-muted small text-uppercase">Atividade Recente</h6>
+                </div>
+                <div class="card-body p-0" style="max-height: 200px; overflow-y: auto;">
+                    <div class="list-group list-group-flush">
+                        @foreach (var log in ultimosLogs)
+                        {
+                            <div class="list-group-item border-0 py-2 bg-transparent" style="font-size: 0.7rem; border-bottom: 1px solid #f8f9fa !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-bold text-mgm" style="font-size: 0.7rem;">@log.Operacao.ToUpper()</span>
+                                    <span class="text-muted" style="font-size: 0.6rem;">@MGMFormatador.ParaHoraLocal(log.DataHora)</span>
+                                </div>
+                                <div class="text-dark text-truncate" title="@log.Detalhes">@log.Detalhes</div>
+                                <div class="text-muted italic mt-1" style="font-size: 0.65rem;">
+                                    <i class="bi bi-person-circle"></i> @(log.Usuario.Contains("@") ? log.Usuario.Split('@')[0] : log.Usuario)
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</AuthorizeView>
     }
     else
     {
@@ -225,6 +266,8 @@
     private int qtdNotasMes;
     //private decimal totalPendente;
     private List<LogAuditoria> ultimosLogs = new();
+    private List<RankingItem> bonsPagadores = new();
+    private List<RankingItem> mausPagadores = new();
     private int abaAtiva = 1;
     private int mesFiltro = DateTime.Today.Month;
     private List<DadosGrafico> dadosFaturamento = new();
@@ -328,7 +371,32 @@
                 Valor = d.Total 
             }).ToList();
 
-        // 4. Logs Audit (Compactos)
+        // 4. CONSULTA BONS PAGADORES (Pagos em dia ou adiantados)
+        bonsPagadores = await context.Cobrancas
+            .Where(c => c.Status == "Liquidado" && c.DataPagamento.HasValue && c.DataPagamento.Value.Date <= c.DataVencimento.Date)
+            .GroupBy(c => c.CnpjTomador)
+            .Select(g => new { Cnpj = g.Key, Qtd = g.Count() })
+            .Join(context.Clientes, r => r.Cnpj, c => c.Cnpj, (r, c) => new RankingItem {
+                Nome = c.RazaoSocial,
+                Qtd = r.Qtd
+            })
+            .OrderByDescending(x => x.Qtd)
+            .Take(3).ToListAsync();
+
+        // 5. CONSULTA MAUS PAGADORES (Vencidos atualmente OU pagos com atraso)
+        mausPagadores = await context.Cobrancas
+            .Where(c => ((c.Status == "Em Aberto" || c.Status == "Pendente") && c.DataVencimento.Date < hoje) || 
+                        (c.DataPagamento.HasValue && c.DataPagamento.Value.Date > c.DataVencimento.Date))
+            .GroupBy(c => c.CnpjTomador)
+            .Select(g => new { Cnpj = g.Key, Qtd = g.Count() })
+            .Join(context.Clientes, r => r.Cnpj, c => c.Cnpj, (r, c) => new RankingItem {
+                Nome = c.RazaoSocial,
+                Qtd = r.Qtd
+            })
+            .OrderByDescending(x => x.Qtd)
+            .Take(3).ToListAsync();
+        
+        // 6. Logs Audit (Compactos)
         ultimosLogs = await context.LogsAuditoria
             .OrderByDescending(l => l.DataHora)
             .Take(10)
@@ -336,6 +404,12 @@
 
         StateHasChanged();
     }
+
+    public class RankingItem 
+    { 
+        public string Nome { get; set; } = ""; 
+        public int Qtd { get; set; } 
+    } 
 
     public class DadosGrafico { public string MesNome { get; set; } = ""; public decimal Valor { get; set; } }
 }

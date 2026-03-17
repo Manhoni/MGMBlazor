@@ -269,7 +269,7 @@ public class SicoobService : ISicoobService
         return boletoGerado;
     }
 
-    public async Task<BoletoResponse?> ConsultarBoletoAsync(long nossoNumero)
+    public async Task<(BoletoResponse?, string)> ConsultarBoletoAsync(long nossoNumero)
     {
         await EnsureTokenAsync();
         SetDefaultHeaders();
@@ -277,27 +277,28 @@ public class SicoobService : ISicoobService
         var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");
         var url = $"{GetBaseUrl()}/boletos?numeroCliente={numeroCliente}&codigoModalidade=1&nossoNumero={nossoNumero}";
 
-        Console.WriteLine($"[DEBUG-SICOOB] Consultando boleto: {nossoNumero}");
+        //Console.WriteLine($"[DEBUG-SICOOB] Consultando boleto: {nossoNumero}");
 
         // 1. Faz a chamada e pega a resposta bruta
         var response = await _httpClient.GetAsync(url);
         var jsonRaw = await response.Content.ReadAsStringAsync();
 
-        // 2. IMPRIME O JSON NO CONSOLE (O seu "dotnet watch" do servidor)
-        Console.WriteLine("-------------------------------------------");
-        Console.WriteLine($"[DEBUG-SICOOB] JSON RECEBIDO DO BANCO:");
-        Console.WriteLine(jsonRaw);
-        Console.WriteLine("-------------------------------------------");
+        // 2. IMPRIME O JSON NO CONSOLE
+        // Console.WriteLine("-------------------------------------------");
+        // Console.WriteLine($"[DEBUG-SICOOB] JSON RECEBIDO DO BANCO:");
+        // Console.WriteLine(jsonRaw);
+        // Console.WriteLine("-------------------------------------------");
 
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"[ERRO SICOOB] Falha na consulta: {response.StatusCode}");
-            return null;
+            return (null, jsonRaw);
         }
 
         // 3. Converte o JSON para o objeto C# usando as opções de camelCase
         var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        return JsonSerializer.Deserialize<BoletoResponse>(jsonRaw, options);
+        var objeto = JsonSerializer.Deserialize<BoletoResponse>(jsonRaw, options);
+        return (objeto, jsonRaw);
 
         // Minha função que funcionava
         // var numeroCliente = IsSandbox() ? 25546454 : _config.GetValue<long>("SicoobConfig:NumeroCliente");

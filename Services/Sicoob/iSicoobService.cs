@@ -9,7 +9,7 @@ public interface ISicoobService
 {
     Task<List<Cobranca>> ListarCobrancasAsync(DateTime inicio, DateTime fim);
     Task<BoletoResponse?> IncluirBoletoAsync(int? notaFiscalId, BoletoRequest request);
-    Task<BoletoResponse?> ConsultarBoletoAsync(long nossoNumero);
+    Task<(BoletoResponse?, string)> ConsultarBoletoAsync(long nossoNumero);
     Task<bool> BaixarBoletoAsync(long nossoNumero);
     Task<List<BoletoResponse>> GerarLoteBoletosAsync(int? notaId, BoletoRequest requestBase, int totalParcelas, PeriodoParcelamento periodo);
 }
