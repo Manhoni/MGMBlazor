@@ -1,6 +1,15 @@
 <div class="changelog-container">
     <div class="version-entry">
-        <h5 class="fw-bold text-dark">Versão 0.9.7 (Atual)</h5>
+        <h5 class="fw-bold text-success">Versão 1.0.0 (Lançamento)</h5>
+        <ul>
+            <li><strong>Domínio Próprio:</strong> Ativação do endereço oficial <code>faturamento.mgmocupacional.com.br</code>.</li>
+            <li><strong>Segurança SSL:</strong> Implementação de criptografia ponta-a-ponta com Certificado SSL/TLS (HTTPS).</li>
+            <li><strong>Infraestrutura Final:</strong> Configuração de Nginx como Proxy Reverso e headers de encaminhamento de protocolo.</li>
+            <li><strong>Go-Live:</strong> Sistema pronto para operação real com notas fiscais e boletos bancários.</li>
+        </ul>
+    </div>
+    <div class="version-entry">
+        <h5 class="fw-bold text-muted italic">Versão 0.9.7</h5>
         <ul>
             <li><strong>Engine Bancário:</strong> Refatoração do <code>SicoobService</code> para retornar Tuplas, permitindo o processamento de JSON bruto e captura de metadados não mapeados.</li>
             <li><strong>Automação de Pagamentos:</strong> Implementada extração dinâmica da data real de liquidação via <code>JsonDocument</code> no robô das 06h e no botão de sincronismo.</li>

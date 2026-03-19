@@ -338,6 +338,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using MGMBlazor.Infrastructure.Security;
 using MGMBlazor.Services.Shared;
 using MGMBlazor.Services.Clientes;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -366,6 +367,13 @@ HttpClientHandler CriarHandler(IServiceProvider sp)
 }
 
 // --- 3. INFRA E SERVIÇOS ---
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    // IMPORTANTE: Como o IP da VM é fixo ou interno, limpamos os proxies conhecidos
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.Services.Configure<NfseOptions>(
     builder.Configuration.GetSection("Nfse"));
 builder.Services.AddScoped<AbrasfXmlBuilder>();
@@ -432,6 +440,8 @@ System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // --- 4. PIPELINE HTTP ---
 if (app.Environment.IsDevelopment())
