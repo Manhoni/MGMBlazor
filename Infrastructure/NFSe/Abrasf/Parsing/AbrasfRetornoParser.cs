@@ -22,7 +22,7 @@ public class AbrasfRetornoParser : INfseRetornoParser
         {
             var soapDoc = XDocument.Parse(xmlSoap);
 
-            Console.WriteLine("\n[DEBUG-XML-SOAP no Parser] " + xmlSoap);
+            //Console.WriteLine("\n[DEBUG-XML-SOAP no Parser] " + xmlSoap);
 
             // Busca o conteúdo de QUALQUER tag que termine em "Result" ou seja "return"
             var resultadoRaw = soapDoc.Descendants().FirstOrDefault(x =>
