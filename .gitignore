@@ -69,6 +69,20 @@ TestResult.xml
 !.vscode/extensions.json
 *.code-workspace
 
+## --- ESPECÍFICO: VISUAL STUDIO 2022 (WINDOWS) ---
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.v12.suo
+*.v11.suo
+*.v10.suo
+*.cache
+*.opendb
+*.db-shm
+*.db-wal
+
 ## --- FERRAMENTAS E GERENCIADORES (NUGET / EF) ---
 .nuget/
 *.nupkg
